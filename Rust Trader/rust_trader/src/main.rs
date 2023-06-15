@@ -1,6 +1,5 @@
 use std::collections::{HashMap};
 
-
 enum WeaponTypes { 
     Lazer,      // High Defense, Low Attack
     Missile,    // Balanced Attack and Defense
@@ -72,8 +71,15 @@ struct Ship {
     ai : AIValues
 }
 
-struct AIValues { // In this simple version, I'm not sure this one is needed.
+enum Factions{
+    Traders,
+    Police,
+    Pirates,
+    Aliens
+}
 
+struct AIValues { // In this simple version, I'm not sure this one is needed.
+    faction: Factions
 }
 
 struct Player {
@@ -188,7 +194,7 @@ struct TradeHub{
 }
 
 struct System {
-    location : tuple<f32, f32>,
+    location : Tuple<f32, f32>,
     gdp : i64,
     star_type : StarTypes,
     worlds : Vec<World>,
@@ -218,8 +224,17 @@ enum DifficultyLevel{
 
 fn build_gameplaystate(player_name: String, difficulty: DifficultyLevel) -> GameplayState {
 
-    
-    GameplayState { ship_stats: (), ship_: Vec::new(), weapon_stats: (), systems: Vec::new(), player: build_player(name, credits) }
+    let mut credits:i64 = 0;
+
+    match difficulty{
+        DifficultyLevel::Easy => credits = 10000,
+        DifficultyLevel::Medium => credits = 5000,
+        DifficultyLevel::Hard => credits = 3000,
+        DifficultyLevel::Impossible => credits = 1500,
+        _=> println!("Unhandled type in build_gameplaystate")
+    }
+
+    GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), systems: Vec::new(), player: build_player(player_name, credits) }
 
 
 }
@@ -233,9 +248,6 @@ fn start_game() {
 
 fn main() {
 
-    // where's my game state?
-
-    // WHERE IS MAI GAME STATE!!
-
-    start_game()
+    // get input for name and difficulty.
+    //build_gameplaystate(player_name, difficulty)
 }
