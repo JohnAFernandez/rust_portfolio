@@ -70,8 +70,8 @@ enum Factions{
 }
 
 
-enum WorldSupports {
-    Oxygenation = 1 << 0,
+enum WorldCharacterists {
+    Oxygenation = 1 << 0,       // Creates Ozone, so no need to add Ozone.
     WaterCycle = 1 << 1,        
     RawMinerals = 1 << 2,       // False means just Carbon, Gas Giant, or Iceball
     Farming = 1 << 3,           // False means no carbon
@@ -81,17 +81,20 @@ enum WorldSupports {
     ToxicAtmosphere = 1 << 7,
     ToxicOceans = 1 << 8,
     NoAtmosphere = 1 << 9,
-    TidallyLocked = 1 << 10,    // Specifically with parent star
+    TidallyLocked = 1 << 10,    // Specifically with parent star, no one cares if it's tidally locked with a satellite or a non-star parent.
     InsideHabitalZone = 1 << 11,
     HighPressureAtmosphere = 1 << 12,   // Not a good thing.  Think Venus
     Hydrogen = 1 << 13,
     Rings = 1 << 14,
     NaturalSatellites = 1 << 15,
+    Oceans = 1 << 16,
+    MagneticField = 1 << 17,
+    NuclearWinter = 1 << 18
 }
 
 
 enum WorldTypes {
-    EarthLike = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 11,
+    EarthLike = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 11 | 1 << 16 | 1 << 17,
     BiologicalGasGiant = 1 << 0 | 1 << 1 | 1 << 4 | 1 << 11 | 1 << 13,
     MercuryLike = 1 << 2 | 1 << 9 | 1 << 10,
     VenusLike = 1 << 2 | 1 << 5 | 1 << 7 | 1 << 11 | 1 << 12,
@@ -210,10 +213,10 @@ fn build_player(name: String, credits: i64) -> Player {
 struct IndustryStats{
     type_: IndustryTypes,
     efficiency : f32,
-    requires : i16  // from worldsupports
+    requires : i32  // from WorldCharacterists
 }
 
-fn build_IndustryStats(type_: IndustryTypes, efficiency : f32, requires : i16) -> IndustryStats {
+fn build_IndustryStats(type_: IndustryTypes, efficiency : f32, requires : i32) -> IndustryStats {
     IndustryStats {
         type_, efficiency, requires
     }
@@ -225,25 +228,26 @@ struct Industry {
     capacity : f64,
     employees : i128,
     efficiency : f32,
-    requires : i16,
+    requires : i32,
     type_ : IndustryTypes
 }
 
-fn build_Industry(name : String, capacity : f64, employees : i128, efficiency : f32, requires : i16, type_ : IndustryTypes) -> Industry {
+fn build_Industry(name : String, capacity : f64, employees : i128, efficiency : f32, requires : i32, type_ : IndustryTypes) -> Industry {
     Industry {name, capacity, employees, efficiency, requires, type_}
 }
 
 
 struct World {
     name : String,
+    mass : f64,
     industries : Vec<Industry>,
     population : i128,
-    supports : i16 // What is earthlike on this planet from the WorldSupports Enum
+    supports : i32 // What is earthlike on this planet from the WorldCharacterists Enum
     
 }
 
-fn build_World (name : String, industries : Vec<Industry>, population : i128, supports : i16) -> World {
-    World{ name, industries, population, supports}
+fn build_World (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i32) -> World {
+    World{ name, mass, industries, population, supports}
 }
 
 
@@ -266,7 +270,7 @@ struct Resource{
     illegal : bool
 }
 
-fn build_Reource(name : String, amount : f64, illegal : bool) -> Resource {
+fn build_Resource(name : String, amount : f64, illegal : bool) -> Resource {
     Resource{ name, amount, illegal}
 }
 
@@ -294,6 +298,7 @@ fn build_Location(system_name : String, orbit_level : i16) -> Location {
     Location {system_name, orbit_level}
 }
 
+
 struct System {
     location : Location,
     gdp : i64,
@@ -302,6 +307,10 @@ struct System {
     space_materials : f64,
     police_presence : f32,
     pirate_presence : f32
+}
+
+fn build_System(location : Location, gdp : i64, star_type : StarTypes, worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
+    System{location, gdp, star_type, worlds, space_materials, police_presence, pirate_presence}
 }
 
 
@@ -315,10 +324,15 @@ fn build_TaskStack(fish : i16) -> TaskStack{
     TaskStack{fish}
 }
 
+
 // Every time we need the gameplay stack to actually change, this struct needs to have a new result added to it. This stack being empty is the trigger for copying relevant object locations to the renderer.
 // Lol, this is going to take forever.
 struct ResultStack{
     fish : i16
+}
+
+fn build_ResultStack(fish : i16) -> ResultStack{
+    ResultStack {fish}
 }
 
 // gameplay state and the gameplay tasks really need their own file.
@@ -351,13 +365,15 @@ fn build_gameplaystate(player_name: String, difficulty: DifficultyLevel) -> Game
         //_=> println!("Unhandled type in build_gameplaystate")  // This triggers a warning....
     }
 
-    GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), systems: Vec::new(), player: build_player(player_name, credits) }
+    let sim_time  = 0;
+
+    GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_ResultStack(0), multiplayer_stack : HashMap::new() }
 
 
 }
 
 fn start_game() {
-    let state = build_gameplaystate(String::from("Test Player Name"), DifficultyLevel::Easy);
+    let mut state: GameplayState = build_gameplaystate(String::from("Test Player Name"), DifficultyLevel::Easy);
 
 
 }
