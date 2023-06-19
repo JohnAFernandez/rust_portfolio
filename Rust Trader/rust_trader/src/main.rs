@@ -1,4 +1,8 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
+use std::ops;
+use std::num;
+use rand::Rng;
+use sqlite;
 
 
 
@@ -70,35 +74,73 @@ enum Factions{
 }
 
 
-enum WorldCharacterists {
+enum WC { // short for World Characteristics
+    // Good Stuff
     Oxygenation = 1 << 0,       // Creates Ozone, so no need to add Ozone.
     WaterCycle = 1 << 1,        
     RawMinerals = 1 << 2,       // False means just Carbon, Gas Giant, or Iceball
-    Farming = 1 << 3,           // False means no carbon
-    AnimalBiology = 1 << 4,     
+    NaturalSoil = 1 << 3,           // False means no carbon, but it essentially means that to do farming, soil does not need to be imported.
+    NaturalAnimalBiology = 1 << 4,     
     EarthGravity = 1 << 5,
     TolerableDisasters = 1 << 6,
-    ToxicAtmosphere = 1 << 7,
-    ToxicOceans = 1 << 8,
-    NoAtmosphere = 1 << 9,
-    TidallyLocked = 1 << 10,    // Specifically with parent star, no one cares if it's tidally locked with a satellite or a non-star parent.
-    InsideHabitalZone = 1 << 11,
-    HighPressureAtmosphere = 1 << 12,   // Not a good thing.  Think Venus
-    Hydrogen = 1 << 13,
-    Rings = 1 << 14,
-    NaturalSatellites = 1 << 15,
-    Oceans = 1 << 16,
-    MagneticField = 1 << 17,
-    NuclearWinter = 1 << 18
+    Hydrogen = 1 << 7,
+    InsideHabitalZone = 1 << 8,
+    MagneticField = 1 << 9,    // this is a prerequisite for life.
+
+
+    // Bad stuff
+    ToxicAtmosphere = 1 << 11,
+    ToxicOceans = 1 << 12,
+    NoAtmosphere = 1 << 13,
+    MinimalAtmosphere = 1 << 14,
+    TidallyLocked = 1 << 15,    // Specifically with parent star, no one cares if it's tidally locked with a satellite or a non-star parent.
+    HighPressureAtmosphere = 1 << 16,   // Not a good thing.  Think Venus
+    ExtremeHeat = 1 << 17,
+    ExtremeCold = 1 << 18,
+    Spheroid = 1 << 19,
+    NuclearWinter = 1 << 20,
+
+    // Nutral stuff
+    Rings = 1 << 22,
+    Oceans = 1 << 23,
+    TectonicallyActive = 1 << 24,
+    NaturalSatellites = 1 << 25,
+
+
+}
+
+impl ops::BitOr<WC> for WC {
+    type Output = isize;
+
+    fn bitor(self, rhs: WC) -> Self::Output {
+        return self as isize | rhs as isize
+    }
+}
+
+impl ops::BitOr<isize> for WC {
+    type Output = isize;
+
+    fn bitor(self, rhs: isize) -> Self::Output {
+        return self as isize | rhs
+    }
+}
+
+impl ops::BitOr<WC> for isize {
+    type Output = isize;
+
+    fn bitor(self, rhs: WC) -> Self::Output {
+        return self | rhs as isize 
+    }
 }
 
 
+// still not sure I'm going to use this.
 enum WorldTypes {
-    EarthLike = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 11 | 1 << 16 | 1 << 17,
-    BiologicalGasGiant = 1 << 0 | 1 << 1 | 1 << 4 | 1 << 11 | 1 << 13,
+    EarthLike = WC::Oxygenation as isize | WC::WaterCycle as isize | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 11 | 1 << 16 | 1 << 17,
+    BiologicalGasGiant = 1 << 0 | 1 << 1 | 1 << 4 | 1 << 11 | 1 << 13 | 1 << 17,
     MercuryLike = 1 << 2 | 1 << 9 | 1 << 10,
     VenusLike = 1 << 2 | 1 << 5 | 1 << 7 | 1 << 11 | 1 << 12,
-    MarsLike = 1 << 2 | 1 << 5
+    MarsLike = WC::RawMinerals as isize | 1 << 5
 }
 
 
@@ -280,27 +322,78 @@ struct TradeHub{
     goods : Resource,
     weapons : Vec<String>,
     equipment : Vec<String>,
-    location : Location
+    orbit : Orbit
     // Missions might be a good thing to try here.
 }
 
-fn build_TradeHub(name: String, goods : Resource, weapons : Vec<String>, equipment : Vec<String>, location : Location) -> TradeHub {
-    TradeHub { name, goods, weapons, equipment, location}
+fn build_TradeHub(name: String, goods : Resource, weapons : Vec<String>, equipment : Vec<String>, orbit : Orbit) -> TradeHub {
+    TradeHub { name, goods, weapons, equipment, orbit}
 }
 
 
-struct Location {
+struct Orbit {
     system_name : String,
     orbit_level : i16
 }
 
-fn build_Location(system_name : String, orbit_level : i16) -> Location {
-    Location {system_name, orbit_level}
+impl Orbit {
+    fn build_Orbit(system_name : String, orbit_level : i16) -> Orbit {
+        Orbit {system_name, orbit_level}
+    }
+   
 }
 
+struct StarmapLocation {
+    x : f32,
+    y : f32
+}
+
+impl StarmapLocation{
+    fn build_StarmapLocation(x : f32, y : f32) -> StarmapLocation{
+        StarmapLocation {x, y}
+    }
+
+    const MINIMUM_DISTANCE : f32 = 5.0;
+
+    fn find_system_distance(lhs : &StarmapLocation, rhs : &StarmapLocation) -> f32 {
+        ((lhs.x - rhs.x).powf(2.0) + (lhs.y - rhs.y).powf(2.0)).sqrt()
+    }
+
+    fn find_distance_to_point(x : f32, y : f32, rhs : &StarmapLocation) -> f32 {
+        ((x - rhs.x).powf(2.0) + (y - rhs.y).powf(2.0)).sqrt()        
+    }
+
+    fn build_random_starmap_location(systems : &Vec<System>) -> StarmapLocation{
+        let mut overlap : bool = true;
+
+        let mut x : f32 = 0.0;
+        let mut y : f32 = 0.0;
+
+        let mut rng = rand::thread_rng();
+
+        while overlap == true{
+            overlap = false;
+            
+            x = rng.gen_range(0.0 .. 1000.0);
+            y = rng.gen_range(0.0 .. 1000.0);
+
+
+            for star in systems {
+                overlap = StarmapLocation::find_distance_to_point(x, y, &star.location) < StarmapLocation::MINIMUM_DISTANCE;
+                
+                if overlap {
+                    break
+                }
+            }
+    
+        }
+
+        StarmapLocation::build_StarmapLocation(x, y)
+    }    
+}
 
 struct System {
-    location : Location,
+    location : StarmapLocation,
     gdp : i64,
     star_type : StarTypes,
     worlds : Vec<World>,
@@ -309,10 +402,17 @@ struct System {
     pirate_presence : f32
 }
 
-fn build_System(location : Location, gdp : i64, star_type : StarTypes, worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
-    System{location, gdp, star_type, worlds, space_materials, police_presence, pirate_presence}
-}
+impl System {
+    fn build_System(location : StarmapLocation, gdp : i64, star_type : StarTypes, worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
+        System{location, gdp, star_type, worlds, space_materials, police_presence, pirate_presence}
+    }    
 
+    fn build_random_system(gs : &GameplayState) -> System {
+        let location : StarmapLocation = StarmapLocation::build_random_starmap_location(&gs.systems);
+
+        System::build_System(location, 10000000, StarTypes::O, Vec::new(), 0.0, 95.0, 5.0)
+    }
+}
 
 // Every time we need the gameplay state to make a decision in a new way, this struct needs to change to encorporate that type of task, using a new task of its own.
 // Don't currently have any, but that is going to need to change to have any chance of finishing this monstrosity.
@@ -325,7 +425,7 @@ fn build_TaskStack(fish : i16) -> TaskStack{
 }
 
 
-// Every time we need the gameplay stack to actually change, this struct needs to have a new result added to it. This stack being empty is the trigger for copying relevant object locations to the renderer.
+// Every time we need the gameplay stack to actually change, this struct needs to have a new result added to it. This stack being empty is the trigger for copying relevant object orbits to the renderer.
 // Lol, this is going to take forever.
 struct ResultStack{
     fish : i16
@@ -346,14 +446,19 @@ struct GameplayState{
 
     player: Player,
 
-    sim_time : i128,
-    tasks: HashMap<i128, TaskStack>,
+    sim_time : u128,
+    tasks: HashMap<u128, TaskStack>,
     results: ResultStack,
-    multiplayer_stack: HashMap<i128, TaskStack>
+    multiplayer_stack: HashMap<u128, TaskStack>
 }
 
+impl GameplayState {
+    fn add_random_system(&mut self) {
+        self.systems.push(System::build_random_system(self))
+    }
+}
 
-fn build_gameplaystate(player_name: String, difficulty: DifficultyLevel) -> GameplayState {
+fn build_GameplayState(player_name: String, difficulty: DifficultyLevel) -> GameplayState {
 
     let mut credits:i64 = 0;
 
@@ -362,7 +467,7 @@ fn build_gameplaystate(player_name: String, difficulty: DifficultyLevel) -> Game
         DifficultyLevel::Medium => credits = 5000,
         DifficultyLevel::Hard => credits = 3000,
         DifficultyLevel::Impossible => credits = 1500,
-        //_=> println!("Unhandled type in build_gameplaystate")  // This triggers a warning....
+        //_=> println!("Unhandled type in build_GameplayState")  // This triggers a warning....
     }
 
     let sim_time  = 0;
@@ -373,13 +478,32 @@ fn build_gameplaystate(player_name: String, difficulty: DifficultyLevel) -> Game
 }
 
 fn start_game() {
-    let mut state: GameplayState = build_gameplaystate(String::from("Test Player Name"), DifficultyLevel::Easy);
+    let mut state: GameplayState = build_GameplayState(String::from("Test Player Name"), DifficultyLevel::Easy);
 
+    let mut debug_counter = 0;
 
+    while state.systems.len() < 100{
+        state.add_random_system();
+        debug_counter +=1;
+
+        if state.systems.len() != debug_counter {
+            println!("We have a problem. System size {} debug counter {}", state.systems.len(), debug_counter);
+        }
+    }
+
+    println!("Showing generated systems.");
+
+    for tom in state.systems{
+        println!("{} {}", tom.location.x, tom.location.y);
+    }
 }
 
 fn main() {
+    // init SDL or some other goofiness here.
+
+
+    // actually start stuff
     start_game()
     // get input for name and difficulty.
-    //build_gameplaystate(player_name, difficulty)
+    //build_GameplayState(player_name, difficulty)
 }
