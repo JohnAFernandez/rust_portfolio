@@ -21,6 +21,7 @@ enum StarTypes {
     F,
     G,
     K,
+    M,
     L,
     T,
     Y,
@@ -407,8 +408,27 @@ impl System {
         System{location, gdp, star_type, worlds, space_materials, police_presence, pirate_presence}
     }    
 
+    const O_MAX : i32 = 1;
+    const BL_MAX : i32 = 16000001;
+    const 
+    const MAX_STAR : i32 = 60932001;
+
     fn build_random_system(gs : &GameplayState) -> System {
         let location : StarmapLocation = StarmapLocation::build_random_starmap_location(&gs.systems);
+
+
+        let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
+        let star_rand: i32 = rng.gen_range(1 .. System::MAX_STAR);
+        
+        // these random numbers definitely have some guess work involved, but they are educated guesses based on a short paper by Glenn LeDrew
+        let mut star_type : StarTypes = StarTypes::BL;
+        match star_rand{
+            0 .. System::O_MAX => star_type = StarTypes::O,
+            2 .. 
+            
+
+            _=> println!("Bad random number generated for star type pick.")
+        }
 
         System::build_System(location, 10000000, StarTypes::O, Vec::new(), 0.0, 95.0, 5.0)
     }
