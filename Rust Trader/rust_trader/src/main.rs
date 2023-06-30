@@ -20,7 +20,7 @@ struct WeaponStats {
     type_ : WeaponTypes
 }
 
-fn build_weaponstats(name : String, size : f32, power_required : f32, base_damage : f32, type_ : WeaponTypes) -> WeaponStats {
+fn build_weapon_stats(name : String, size : f32, power_required : f32, base_damage : f32, type_ : WeaponTypes) -> WeaponStats {
     WeaponStats { name, size, power_required, base_damage, type_ }
 }
 
@@ -179,7 +179,7 @@ struct AIValues { // In this simple version, I'm not sure this one is needed.
     faction: Factions
 }
 
-fn build_AIValues(faction: Factions) -> AIValues {
+fn build_ai_values(faction: Factions) -> AIValues {
     AIValues {
         faction
     }
@@ -191,7 +191,7 @@ struct Player {
     credits : i64,
     reputation : i16,
     morality : i16,
-    current_ship : String
+    ship : Ship
 }
 
 fn build_player(name: String, credits: i64) -> Player {
@@ -200,18 +200,18 @@ fn build_player(name: String, credits: i64) -> Player {
         credits,
         reputation : 0,
         morality : 0,
-        current_ship : String::from("Test")
+        ship : Ship::build_ship(String::from("Test Ship Class"), String::from("Test player ship name"), 0, 0.0, 100.0, 1, 1, 2, 0, 30000.0, 30000.0, 1.0, 1, 1000.0, 1.00, 2, 0, Vec::new(), Vec::new())
     }
 }
 
 
 struct IndustryStats{
     type_: IndustryTypes,
-    efficiency : f32,
+    efficiency : f32, // how many man hours per kilogram ...
     requires : i32  // from WorldCharacterists
 }
 
-fn build_IndustryStats(type_: IndustryTypes, efficiency : f32, requires : i32) -> IndustryStats {
+fn build_industry_stats(type_: IndustryTypes, efficiency : f32, requires : i32) -> IndustryStats {
     IndustryStats {
         type_, efficiency, requires
     }
@@ -227,7 +227,7 @@ struct Industry {
     type_ : IndustryTypes
 }
 
-fn build_Industry(name : String, capacity : f64, employees : i128, efficiency : f32, requires : i32, type_ : IndustryTypes) -> Industry {
+fn build_industry(name : String, capacity : f64, employees : i128, efficiency : f32, requires : i32, type_ : IndustryTypes) -> Industry {
     Industry {name, capacity, employees, efficiency, requires, type_}
 }
 
@@ -242,7 +242,7 @@ struct ResourceStats{
     illegal : bool
 }
 
-fn build_ResourceStats( name : String, type_ : IndustryTypes, efficiency : i8, demand : f32, illegal : bool) -> ResourceStats {
+fn build_resource_stats( name : String, type_ : IndustryTypes, efficiency : i8, demand : f32, illegal : bool) -> ResourceStats {
     ResourceStats { name, type_, efficiency, demand, illegal}
 }
 
@@ -253,7 +253,7 @@ struct Resource{
     illegal : bool
 }
 
-fn build_Resource(name : String, amount : f64, illegal : bool) -> Resource {
+fn build_resource(name : String, amount : f64, illegal : bool) -> Resource {
     Resource{ name, amount, illegal}
 }
 
@@ -267,7 +267,7 @@ struct TradeHub{
     // Missions might be a good thing to try here.
 }
 
-fn build_TradeHub(name: String, goods : Resource, weapons : Vec<String>, equipment : Vec<String>, orbit : Orbit) -> TradeHub {
+fn build_trade_hub(name: String, goods : Resource, weapons : Vec<String>, equipment : Vec<String>, orbit : Orbit) -> TradeHub {
     TradeHub { name, goods, weapons, equipment, orbit}
 }
 
@@ -278,7 +278,7 @@ struct Orbit {
 }
 
 impl Orbit {
-    fn build_Orbit(system_name : String, orbit_level : i16) -> Orbit {
+    fn build_orbit(system_name : String, orbit_level : i16) -> Orbit {
         Orbit {system_name, orbit_level}
     }
    
@@ -294,7 +294,7 @@ struct World {
 }
 
 impl World{
-    fn build_World (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i32) -> World {
+    fn build_world (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i32) -> World {
         World{ name, mass, industries, population, supports}
     }    
 }
@@ -306,7 +306,7 @@ struct StarmapLocation {
 }
 
 impl StarmapLocation{
-    fn build_StarmapLocation(x : f32, y : f32) -> StarmapLocation{
+    fn build_starmap_location(x : f32, y : f32) -> StarmapLocation{
         StarmapLocation {x, y}
     }
 
@@ -345,7 +345,7 @@ impl StarmapLocation{
     
         }
 
-        StarmapLocation::build_StarmapLocation(x, y)
+        StarmapLocation::build_starmap_location(x, y)
     }    
 }
 
@@ -502,7 +502,7 @@ struct TaskStack{
     fish : i16
 }
 
-fn build_TaskStack(fish : i16) -> TaskStack{
+fn build_task_stack(fish : i16) -> TaskStack{
     TaskStack{fish}
 }
 
@@ -513,7 +513,7 @@ struct ResultStack{
     fish : i16
 }
 
-fn build_ResultStack(fish : i16) -> ResultStack{
+fn build_result_stack(fish : i16) -> ResultStack{
     ResultStack {fish}
 }
 
@@ -554,7 +554,7 @@ impl GameplayState {
     }
 }
 
-fn build_gameplaystate(player_name: String, difficulty: DifficultyLevel) -> GameplayState {
+fn build_gameplay_state(player_name: String, difficulty: DifficultyLevel) -> GameplayState {
 
     let mut credits:i64 = 0;
 
@@ -563,33 +563,32 @@ fn build_gameplaystate(player_name: String, difficulty: DifficultyLevel) -> Game
         DifficultyLevel::Medium => credits = 5000,
         DifficultyLevel::Hard => credits = 3000,
         DifficultyLevel::Impossible => credits = 1500,
-        //_=> println!("Unhandled type in build_gameplaystate")  // This triggers a warning....
+        //_=> println!("Unhandled type in build_gameplay_state")  // This triggers a warning....
     }
 
     let sim_time  = 0;
 
-    GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), difficulty, systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_ResultStack(0), multiplayer_stack : HashMap::new() }
+    GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), difficulty, systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_result_stack(0), multiplayer_stack : HashMap::new() }
 }
 
-fn start_game() {
-    let mut state: GameplayState = build_gameplaystate(String::from("Test Player Name"), DifficultyLevel::Easy);
+fn start_game() -> GameplayState {
+    let mut state: GameplayState = build_gameplay_state(String::from("Test Player Name"), DifficultyLevel::Easy);
 
-    let mut debug_counter = 0;
+    System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, StarTypes::F as isize, Vec::new(), 0.0, 100.0, 5.0);
 
     while state.systems.len() < 1000{
         state.add_random_system();
-        debug_counter +=1;
-
-        if state.systems.len() != debug_counter {
-            println!("We have a problem. System size {} debug counter {}", state.systems.len(), debug_counter);
-        }
     }
 
-    println!("Showing generated systems.");
+//    println!("Showing generated systems.");
 
-    for star_type in 0..20{
-        println!("Type {} has {} in the gamestate", star_type, state.count_star_type(star_type));
-    }
+//    for star_type in 0..20{
+//        println!("Type {} has {} in the gamestate", star_type, state.count_star_type(star_type));
+//    }
+
+
+
+    state
 }
 
 // The immutable basic details for a ship
@@ -609,7 +608,7 @@ impl ShipStats{
 
     const types : [&str ; 6] = ["Fighter", "Destroyer", "Frigate", "Cruiser", "Battleship", "Carrier"];
 
-    fn build_shipstats(class_name : String, type_ : i8, max_cargo_volume : f32, crew_minimum : i16, crew_maximum : i16, base_mass: f64, sensor_range: f64, weapon_slots: i16, equipment_slots: i16) -> ShipStats {
+    fn build_ship_stats(class_name : String, type_ : i8, max_cargo_volume : f32, crew_minimum : i16, crew_maximum : i16, base_mass: f64, sensor_range: f64, weapon_slots: i16, equipment_slots: i16) -> ShipStats {
         ShipStats { class_name, type_, max_cargo_volume, crew_minimum, crew_maximum, base_mass, sensor_range, weapon_slots, equipment_slots }
     }    
 }
@@ -661,7 +660,7 @@ fn main() {
 
 
     // actually start stuff
-    start_game()
+    start_game();
     // get input for name and difficulty.
-    //build_GameplayState(player_name, difficulty)
+    //build_gameplay_state(player_name, difficulty)
 }
