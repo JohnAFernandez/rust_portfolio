@@ -1,9 +1,11 @@
 use std::collections::HashMap;
-use std::isize;
-use std::ops;
-use std::num;
+//use std::isize;
+//use std::ops;
+//use std::num;
 use rand::Rng;
-use sqlite;
+//use sqlite;
+
+mod star_calcs;
 
 enum WeaponTypes { 
     Lazer,      // High Defense, Low Attack
@@ -24,41 +26,6 @@ fn build_weapon_stats(name : String, size : f32, power_required : f32, base_dama
     WeaponStats { name, size, power_required, base_damage, type_ }
 }
 
-
-// Are these going to do anything yet?  I'm not sure.
-enum StarTypes {
-    // Giant Stars
-    GA,
-    GF,
-    GG,
-    GK,
-    GM,
-
-    // Main Sequence
-    O,
-    B,
-    A,
-    F,
-    G,
-    K,
-    M,
-
-    // Black Holes
-    BH,
-
-    // Nutron Stars
-    NS,
-
-    // White Dwarfs
-    WB,
-    WA,
-    WF,
-    WG,
-    WK,
-
-    // ~ Brown Dwarfs (Simplified)
-    L,
-}
 
 
 // To be expanded in the full game.
@@ -92,22 +59,6 @@ enum Factions{
     Police,
     Pirates,
     Aliens
-}
-
-
-enum WC { // short for World Characteristics
-
-}
-
-
-
-// still not sure I'm going to use this.
-enum WorldTypes {
-    EarthLike = WC::Oxygenation as isize | WC::WaterCycle as isize | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 5 | 1 << 6 | 1 << 11 | 1 << 16 | 1 << 17,
-    BiologicalGasGiant = 1 << 0 | 1 << 1 | 1 << 4 | 1 << 11 | 1 << 13 | 1 << 17,
-    MercuryLike = 1 << 2 | 1 << 9 | 1 << 10,
-    VenusLike = 1 << 2 | 1 << 5 | 1 << 7 | 1 << 11 | 1 << 12,
-    MarsLike = WC::RawMinerals as isize | 1 << 5
 }
 
 
@@ -239,8 +190,6 @@ fn build_industry(name : String, capacity : f64, employees : i128, efficiency : 
 }
 
 
-
-
 struct ResourceStats{
     name : String,
     type_ : IndustryTypes,
@@ -305,7 +254,7 @@ impl World{
     // Good Stuff
     const OXYGENATION : i64 = 1 << 0;       // Creates Ozone, so no need to add Ozone.
     const WATER_CYCLE : i64 = 1 << 1;        
-    const RAW_MATERIALS : i64 = 1 << 2;       // False means just Carbon, Gas Giant, or Iceball
+    const RAW_MATERIALS : i64 = 1 << 2;       // False means, Gas Giant, or Iceball
     const NATURAL_SOIL : i64 = 1 << 3;           // False means no carbon, but it essentially means that to do farming, soil does not need to be imported.
     const NATURAL_ANIMAL_BIOLOGY : i64 = 1 << 4;     
     const EARTH_GRAVITY : i64 = 1 << 5;
@@ -325,14 +274,28 @@ impl World{
     const EXTREME_COLD : i64 = 1 << 18;
     const SPHEROID : i64 = 1 << 19;
     const NUCLEAR_WINTER : i64 = 1 << 20;
+    const ACIDIC : i64 = 1 << 21;
+    const ALKALINE : i64 = 1 << 22;
 
     // Nutral stuff
-    const RINGS : i64 = 1 << 22;
-    const OCEANS : i64 = 1 << 23;
-    const TECTONICALLY_ACTIVE : i64 = 1 << 24;
-    const NATURAL_SATELLITES : i64 = 1 << 25;
+    const RINGS : i64 = 1 << 25;
+    const OCEANS : i64 = 1 << 26;
+    const TECTONICALLY_ACTIVE : i64 = 1 << 27;
+    const NATURAL_SATELLITES : i64 = 1 << 28;
 
-    
+
+    const MERCURY_LIKE : i64 = 0;    
+    const VENUS_LIKE : i64 = World::;
+    const EARTH_LIKE : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::NATURAL_ANIMAL_BIOLOGY | World::EARTH_GRAVITY | World::TOLDERABLE_DISASTERS | World::HYDROGEN | World::INSIDE_HABITABLE_ZONE | World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
+    const CURRENT_EARTH : i64 = World::EARTH_LIKE | World::NUCLEAR_WINTER | World::TOXIC_ATMOSPHERE;
+    const MARS_LIKE : i64 = World::INSIDE_HABITABLE_ZONE | World::EXTREME_COLD | World::NATURAL_SATELLITES | World::MINIMAL_ATMOSPHERE | World::RAW_MATERIALS;
+    const JUPITER_LIKE : i64 = 0;
+    const SATURN_LIKE : i64 = 0;
+
+    const ICE_GIANT : i64 = 0;
+
+    const BIOLOGICAL_GAS_GIANT : i64 = 0;
+
 
 
 
@@ -395,7 +358,7 @@ struct System {
     name : String,
     location : StarmapLocation,
     gdp : i64,
-    star_type : isize,
+    star_type : i64,
     worlds : Vec<World>,
     space_materials : f64,
     police_presence : f32,
@@ -403,117 +366,22 @@ struct System {
 }
 
 impl System {
-    fn build_system(name : String, location : StarmapLocation, gdp : i64, star_type : isize, worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
+    fn build_system(name : String, location : StarmapLocation, gdp : i64, star_type : i64, worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
         System{name, location, gdp, star_type, worlds, space_materials, police_presence, pirate_presence}
     }    
 
-    // The chance of each star appearing
-    const GA_MAX : f32 = 0.000015;
-    const GF_MAX : f32 = 0.0001658;
-    const GG_MAX : f32 = 0.0006181;
-    const GK_MAX : f32 = 0.00212567;
-    const GM_MAX : f32 = 0.002201;
-    const O_MAX : f32 = 0.002201;
-    const B_MAX : f32 = 0.00250257;
-    const A_MAX : f32 = 0.00401013;
-    const F_MAX : f32 = 0.01154797;
-    const G_MAX : f32 = 0.031146;
-    const K_MAX : f32 = 0.0612977;
-    const M_MAX : f32 = 0.25125;
-    const BH_MAX : f32 = 0.37185;
-    const NS_MAX : f32 = 0.41256;
-    const WB_MAX : f32 = 0.432159;
-    const WA_MAX : f32 = 0.46231;
-    const WF_MAX : f32 = 0.47738;
-    const WG_MAX : f32 = 0.49246;
-    const WK_MAX : f32 = 0.5;
-    const L_MAX : f32 = 1.0; // To simplify things, brown dwarfs are about half as likely
 
-    const WORLDS_TO_SUN_MASS_RATIO : f32 = 0.0015;
-    const SOLAR_MASSES_TO_KG : f64 = 2000000000000000000000000000000.0;
-
-    const GA_MASS : f32 = 1.75;
-    const GF_MASS : f32 = 1.2;
-    const GG_MASS : f32 = 1.0;
-    const GK_MASS : f32 = 1.0;
-    const GM_MASS : f32 = 1.0;
-    const O_MASS : f32 = 18.0;
-    const B_MASS : f32 = 9.0;
-    const A_MASS : f32 = 1.75;
-    const F_MASS : f32 = 1.2;
-    const G_MASS : f32 = 0.9;
-    const K_MASS : f32 = 0.625;
-    const M_MASS : f32 = 0.26;
-    const BH_MASS : f32 = 71.0;
-    const NS_MASS : f32 = 1.6;
-    const WB_MASS : f32 = 0.75;
-    const WA_MASS : f32 = 0.75;
-    const WF_MASS : f32 = 0.75;
-    const WG_MASS : f32 = 0.75;
-    const WK_MASS : f32 = 0.75;
-    const L_MASS : f32 = 0.1;
 
     fn build_random_system(gs : &GameplayState) -> System {
         let location : StarmapLocation = StarmapLocation::build_random_starmap_location(&gs.systems);
 
-
+        // these random numbers definitely have some guess work involved, but they are educated guesses based on a short paper by Glenn LeDrew
+        let star_type : i64 = star_calcs::StarCalc::new_random_star_type();
+        let mut system_mass : f64 = star_calcs::StarCalc::get_random_system_mass(star_type);
+        let mut planet_mass : f64 = star_calcs::StarCalc::get_planet_mass(system_mass);
+        
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
         let star_rand: f32 = rng.gen();
-        
-        // these random numbers definitely have some guess work involved, but they are educated guesses based on a short paper by Glenn LeDrew
-        let mut star_type : isize = StarTypes::BH as isize;
-
-        match star_rand{
-            s if 0.0 <= s && s < System::GA_MAX => star_type = StarTypes::GA as isize,
-            s if System::GA_MAX < s && s <= System::GF_MAX => star_type = StarTypes::GF as isize,
-            s if System::GF_MAX < s && s <= System::GG_MAX => star_type = StarTypes::GG as isize,
-            s if System::GG_MAX < s && s <= System::GK_MAX => star_type = StarTypes::GK as isize,                        
-            s if System::GK_MAX < s && s <= System::GM_MAX => star_type = StarTypes::GM as isize,                        
-            s if System::GM_MAX < s && s <= System::O_MAX => star_type = StarTypes::O as isize,
-            s if System::O_MAX < s && s <= System::B_MAX => star_type = StarTypes::B as isize,                        
-            s if System::B_MAX < s && s <= System::A_MAX => star_type = StarTypes::A as isize,                        
-            s if System::A_MAX < s && s <= System::F_MAX => star_type = StarTypes::F as isize,                        
-            s if System::F_MAX < s && s <= System::G_MAX => star_type = StarTypes::G as isize,
-            s if System::G_MAX < s && s <= System::K_MAX => star_type = StarTypes::K as isize,
-            s if System::K_MAX < s && s <= System::M_MAX => star_type = StarTypes::M as isize,
-            s if System::M_MAX < s && s <= System::BH_MAX => star_type = StarTypes::BH as isize,                        
-            s if System::BH_MAX < s && s <= System::NS_MAX => star_type = StarTypes::NS as isize,
-            s if System::NS_MAX < s && s <= System::WB_MAX => star_type = StarTypes::WB as isize,
-            s if System::WB_MAX < s && s <= System::WA_MAX => star_type = StarTypes::WA as isize,
-            s if System::WA_MAX < s && s <= System::WF_MAX => star_type = StarTypes::WF as isize,
-            s if System::WF_MAX < s && s <= System::WG_MAX => star_type = StarTypes::WG as isize,
-            s if System::WG_MAX < s && s <= System::WK_MAX => star_type = StarTypes::WK as isize,
-            s if System::WK_MAX < s && s <= System::L_MAX => star_type = StarTypes::L as isize,                        
-
-            _=> println!("Bad random number {} generated for star type pick.", star_rand)
-        }
-
-        let mut system_mass : f64 = 0.0;
-
-        match star_type{
-            s if s == StarTypes::GA as isize => system_mass = (System::GA_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,
-            s if s == StarTypes::GF as isize => system_mass = (System::GF_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,
-            s if s == StarTypes::GG as isize => system_mass = (System::GG_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,
-            s if s == StarTypes::GK as isize => system_mass = (System::GK_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,                        
-            s if s == StarTypes::GM as isize => system_mass = (System::GM_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,                        
-            s if s == StarTypes::O as isize => system_mass = (System::O_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::B as isize => system_mass = (System::B_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,                        
-            s if s == StarTypes::A as isize => system_mass = (System::A_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,                         
-            s if s == StarTypes::F as isize => system_mass = (System::F_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::G as isize => system_mass = (System::G_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::K as isize => system_mass = (System::K_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::M as isize => system_mass = (System::M_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64,                         
-            s if s == StarTypes::BH as isize => system_mass = (System::BH_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::NS as isize => system_mass = (System::NS_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::WB as isize => system_mass = (System::WB_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::WA as isize => system_mass = (System::WA_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::WF as isize => system_mass = (System::WF_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::WG as isize => system_mass = (System::WG_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::WK as isize => system_mass = (System::WK_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-            s if s == StarTypes::L as isize => system_mass = (System::L_MASS * System::WORLDS_TO_SUN_MASS_RATIO) as f64, 
-
-            _=> println!("Bad star type of {} found in mass calc.", star_type)
-        }
 
         let pirate_presence : f32;
         let police_presence : f32;
@@ -532,8 +400,6 @@ impl System {
         }
 
         
-        system_mass *= System::SOLAR_MASSES_TO_KG;        
-
         System::build_system(String::from("Test"), location, 10000000, star_type, Vec::new(), system_mass, police_presence, pirate_presence)
     }
 }
@@ -583,7 +449,7 @@ impl GameplayState {
         self.systems.push(System::build_random_system(self))
     }
 
-    fn count_star_type(&self, type_ : isize) -> i32{
+    fn count_star_type(&self, type_ : i64) -> i32{
         let mut count: i32 = 0;
 
         for system in &self.systems{
@@ -609,9 +475,9 @@ impl GameplayState {
     
         let sim_time  = 0;
     
-        let mut state = GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), difficulty, systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_result_stack(0), multiplayer_stack : HashMap::new() }
+        let mut state = GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), difficulty, systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_result_stack(0), multiplayer_stack : HashMap::new()};
 
-        let mut sol_system = System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, StarTypes::F as isize, Vec::new(), 0.0, 100.0, 5.0);
+        let mut sol_system = System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, star_calcs::StarTypes::F as i64, Vec::new(), 0.0, 100.0, 5.0);
 
         state.systems.push(sol_system);
 
