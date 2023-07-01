@@ -1,7 +1,9 @@
+#![allow(dead_code)] // until more of this is written.
+
 mod dark_void;
 
 fn start_game() -> dark_void::GameplayState {
-    let mut state: dark_void::GameplayState = dark_void::GameplayState::build_gameplay_state(String::from("Test Player Name"), dark_void::DifficultyLevel::Easy);
+    let mut _state: dark_void::GameplayState = dark_void::GameplayState::build_gameplay_state(String::from("Test Player Name"), dark_void::DifficultyLevel::Easy);
 
 //    println!("Showing generated systems.");
 
@@ -11,7 +13,7 @@ fn start_game() -> dark_void::GameplayState {
 
 
 
-    state
+    _state
 }
 
 

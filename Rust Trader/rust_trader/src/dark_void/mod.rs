@@ -1,3 +1,5 @@
+#![allow(dead_code)] // until more of this is written.
+
 use std::collections::HashMap;
 //use std::isize;
 //use std::ops;
@@ -85,7 +87,7 @@ struct ShipStats {
 
 impl ShipStats{
 
-    const types : [&str ; 6] = ["Fighter", "Destroyer", "Frigate", "Cruiser", "Battleship", "Carrier"];
+    const TYPES : [&str ; 6] = ["Fighter", "Destroyer", "Frigate", "Cruiser", "Battleship", "Carrier"];
 
     fn build_ship_stats(class_name : String, type_ : i8, max_cargo_volume : f32, crew_minimum : i16, crew_maximum : i16, base_mass: f64, sensor_range: f64, weapon_slots: i16, equipment_slots: i16) -> ShipStats {
         ShipStats { class_name, type_, max_cargo_volume, crew_minimum, crew_maximum, base_mass, sensor_range, weapon_slots, equipment_slots }
@@ -246,7 +248,7 @@ struct World {
     mass : f64,
     industries : Vec<Industry>,
     population : i128,
-    supports : i32 // What is earthlike on this planet from the WorldCharacterists Enum
+    supports : i64 // What is earthlike on this planet from the WorldCharacterists Enum
     
 }
 
@@ -276,6 +278,7 @@ impl World{
     const NUCLEAR_WINTER : i64 = 1 << 20;
     const ACIDIC : i64 = 1 << 21;
     const ALKALINE : i64 = 1 << 22;
+    const HIGH_GRAVITY : i64 = 1 << 23;
 
     // Nutral stuff
     const RINGS : i64 = 1 << 25;
@@ -283,23 +286,22 @@ impl World{
     const TECTONICALLY_ACTIVE : i64 = 1 << 27;
     const NATURAL_SATELLITES : i64 = 1 << 28;
 
-
-    const MERCURY_LIKE : i64 = 0;    
-    const VENUS_LIKE : i64 = World::;
+    // Aggregates
+    const MERCURY_LIKE : i64 = World::RAW_MATERIALS | World::EXTREME_COLD | World::EXTREME_HEAT | World::NO_ATMOSPHERE | World::TIDALLY_LOCKED;    
+    const VENUS_LIKE : i64 = World::RAW_MATERIALS | World::ACIDIC | World::HIGH_PRESSURE_ATMOSPHERE | World::EARTH_GRAVITY | World::EXTREME_HEAT | World::INSIDE_HABITABLE_ZONE;
     const EARTH_LIKE : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::NATURAL_ANIMAL_BIOLOGY | World::EARTH_GRAVITY | World::TOLDERABLE_DISASTERS | World::HYDROGEN | World::INSIDE_HABITABLE_ZONE | World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
     const CURRENT_EARTH : i64 = World::EARTH_LIKE | World::NUCLEAR_WINTER | World::TOXIC_ATMOSPHERE;
-    const MARS_LIKE : i64 = World::INSIDE_HABITABLE_ZONE | World::EXTREME_COLD | World::NATURAL_SATELLITES | World::MINIMAL_ATMOSPHERE | World::RAW_MATERIALS;
-    const JUPITER_LIKE : i64 = 0;
-    const SATURN_LIKE : i64 = 0;
+    const MARS_LIKE : i64 = World::INSIDE_HABITABLE_ZONE | World::EXTREME_COLD | World::NATURAL_SATELLITES | World::MINIMAL_ATMOSPHERE | World::RAW_MATERIALS | World::MAGNETIC_FIELD;
+    const JUPITER_LIKE : i64 = World::HIGH_GRAVITY | World::MAGNETIC_FIELD | World::HYDROGEN | World::NATURAL_SATELLITES | World::TOXIC_ATMOSPHERE;
+    const SATURN_LIKE : i64 = World::JUPITER_LIKE | World::RINGS;
 
-    const ICE_GIANT : i64 = 0;
+    const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::EXTREME_COLD | World::TOXIC_ATMOSPHERE; // Neptune and Uranus
 
-    const BIOLOGICAL_GAS_GIANT : i64 = 0;
-
-
+    const BIOLOGICAL_GAS_GIANT : i64 = World::INSIDE_HABITABLE_ZONE | World::OXYGENATION | World::HIGH_GRAVITY | World::HYDROGEN | World::HIGH_PRESSURE_ATMOSPHERE | World::NATURAL_ANIMAL_BIOLOGY | World::TOLDERABLE_DISASTERS | World::NATURAL_SATELLITES;
 
 
-    fn build_world (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i32) -> World {
+
+    fn build_world (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i64) -> World {
         World{ name, mass, industries, population, supports}
     }    
 }
@@ -377,11 +379,10 @@ impl System {
 
         // these random numbers definitely have some guess work involved, but they are educated guesses based on a short paper by Glenn LeDrew
         let star_type : i64 = star_calcs::StarCalc::new_random_star_type();
-        let mut system_mass : f64 = star_calcs::StarCalc::get_random_system_mass(star_type);
-        let mut planet_mass : f64 = star_calcs::StarCalc::get_planet_mass(system_mass);
+        let system_mass : f64 = star_calcs::StarCalc::get_random_system_mass(star_type);
+        let planet_mass : f64 = star_calcs::StarCalc::get_planet_mass(system_mass);
         
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
-        let star_rand: f32 = rng.gen();
 
         let pirate_presence : f32;
         let police_presence : f32;
@@ -391,12 +392,6 @@ impl System {
             DifficultyLevel::Medium => {pirate_presence = rng.gen_range(0.0..0.10); police_presence = rng.gen_range(0.85..0.95)},
             DifficultyLevel::Hard => {pirate_presence = rng.gen_range(0.05..0.15); police_presence = rng.gen_range(0.75..0.90)},
             DifficultyLevel::Impossible => {pirate_presence = rng.gen_range(0.1..0.25); police_presence = rng.gen_range(0.70..0.80)},
-        }
-
-        match star_type {
-            
-
-            _=> ()
         }
 
         
@@ -463,7 +458,7 @@ impl GameplayState {
 
     pub fn build_gameplay_state(player_name: String, difficulty: DifficultyLevel) -> GameplayState {
 
-        let mut credits:i64 = 0;
+        let credits:i64;
     
         match difficulty{
             DifficultyLevel::Easy => credits = 10000,
@@ -477,7 +472,7 @@ impl GameplayState {
     
         let mut state = GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), difficulty, systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_result_stack(0), multiplayer_stack : HashMap::new()};
 
-        let mut sol_system = System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, star_calcs::StarTypes::F as i64, Vec::new(), 0.0, 100.0, 5.0);
+        let sol_system = System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, star_calcs::StarTypes::F as i64, Vec::new(), 0.0, 100.0, 5.0);
 
         state.systems.push(sol_system);
 

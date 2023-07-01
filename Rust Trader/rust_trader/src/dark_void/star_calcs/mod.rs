@@ -1,3 +1,5 @@
+#![allow(dead_code)] // until more of this is written.
+
 use rand::Rng;
 
 pub struct StarCalc {
@@ -49,6 +51,7 @@ impl StarCalc {
     const WG_MASS : f32 = 0.75;
     const WK_MASS : f32 = 0.75;
     const L_MASS : f32 = 0.1;
+    const L_MIN_MASS : f32 = 0.005;
 
 
     pub fn new_random_star_type() -> i64 {
@@ -91,26 +94,26 @@ impl StarCalc {
         let mut min_system_mass : f64 = 0.0;
 
         match star_type{
-            s if s == StarTypes::GA as i64 => {max_system_mass = (StarCalc::GA_MASS) as f64; },
-            s if s == StarTypes::GF as i64 => max_system_mass = (StarCalc::GF_MASS) as f64,
-            s if s == StarTypes::GG as i64 => max_system_mass = (StarCalc::GG_MASS) as f64,
-            s if s == StarTypes::GK as i64 => max_system_mass = (StarCalc::GK_MASS) as f64,                        
-            s if s == StarTypes::GM as i64 => max_system_mass = (StarCalc::GM_MASS) as f64,                        
-            s if s == StarTypes::O as i64 => max_system_mass = (StarCalc::O_MASS) as f64, 
-            s if s == StarTypes::B as i64 => max_system_mass = (StarCalc::B_MASS) as f64,                        
-            s if s == StarTypes::A as i64 => max_system_mass = (StarCalc::A_MASS) as f64,                         
-            s if s == StarTypes::F as i64 => max_system_mass = (StarCalc::F_MASS) as f64, 
-            s if s == StarTypes::G as i64 => max_system_mass = (StarCalc::G_MASS) as f64, 
-            s if s == StarTypes::K as i64 => max_system_mass = (StarCalc::K_MASS) as f64, 
-            s if s == StarTypes::M as i64 => max_system_mass = (StarCalc::M_MASS) as f64,                         
-            s if s == StarTypes::BH as i64 => max_system_mass = (StarCalc::BH_MASS) as f64, 
-            s if s == StarTypes::NS as i64 => max_system_mass = (StarCalc::NS_MASS) as f64, 
-            s if s == StarTypes::WB as i64 => max_system_mass = (StarCalc::WB_MASS) as f64, 
-            s if s == StarTypes::WA as i64 => max_system_mass = (StarCalc::WA_MASS) as f64, 
-            s if s == StarTypes::WF as i64 => max_system_mass = (StarCalc::WF_MASS) as f64, 
-            s if s == StarTypes::WG as i64 => max_system_mass = (StarCalc::WG_MASS) as f64, 
-            s if s == StarTypes::WK as i64 => max_system_mass = (StarCalc::WK_MASS) as f64, 
-            s if s == StarTypes::L as i64 => max_system_mass = (StarCalc::L_MASS) as f64, 
+            s if s == StarTypes::GA as i64 => {max_system_mass = (StarCalc::GA_MASS) as f64; min_system_mass = StarCalc::GF_MASS as f64},
+            s if s == StarTypes::GF as i64 => {max_system_mass = (StarCalc::GF_MASS) as f64; min_system_mass = StarCalc::GG_MASS as f64},
+            s if s == StarTypes::GG as i64 => {max_system_mass = (StarCalc::GG_MASS) as f64; min_system_mass = StarCalc::GK_MASS as f64},
+            s if s == StarTypes::GK as i64 => {max_system_mass = (StarCalc::GK_MASS) as f64; min_system_mass = StarCalc::GM_MASS as f64},                        
+            s if s == StarTypes::GM as i64 => {max_system_mass = (StarCalc::GM_MASS) as f64; min_system_mass = StarCalc::L_MASS as f64},                        
+            s if s == StarTypes::O as i64 => {max_system_mass = (StarCalc::O_MASS) as f64; min_system_mass = StarCalc::B_MASS as f64}, 
+            s if s == StarTypes::B as i64 => {max_system_mass = (StarCalc::B_MASS) as f64; min_system_mass = StarCalc::A_MASS as f64},                        
+            s if s == StarTypes::A as i64 => {max_system_mass = (StarCalc::A_MASS) as f64; min_system_mass = StarCalc::F_MASS as f64},                         
+            s if s == StarTypes::F as i64 => {max_system_mass = (StarCalc::F_MASS) as f64; min_system_mass = StarCalc::G_MASS as f64}, 
+            s if s == StarTypes::G as i64 => {max_system_mass = (StarCalc::G_MASS) as f64; min_system_mass = StarCalc::K_MASS as f64}, 
+            s if s == StarTypes::K as i64 => {max_system_mass = (StarCalc::K_MASS) as f64; min_system_mass = StarCalc::M_MASS as f64}, 
+            s if s == StarTypes::M as i64 => {max_system_mass = (StarCalc::M_MASS) as f64; min_system_mass = StarCalc::L_MASS as f64},                         
+            s if s == StarTypes::BH as i64 => {max_system_mass = (StarCalc::BH_MASS) as f64; min_system_mass = StarCalc::NS_MASS as f64}, 
+            s if s == StarTypes::NS as i64 => {max_system_mass = (StarCalc::NS_MASS) as f64; min_system_mass = StarCalc::WB_MASS as f64}, 
+            s if s == StarTypes::WB as i64 => {max_system_mass = (StarCalc::WB_MASS) as f64; min_system_mass = StarCalc::WA_MASS as f64}, 
+            s if s == StarTypes::WA as i64 => {max_system_mass = (StarCalc::WA_MASS) as f64; min_system_mass = StarCalc::WF_MASS as f64}, 
+            s if s == StarTypes::WF as i64 => {max_system_mass = (StarCalc::WF_MASS) as f64; min_system_mass = StarCalc::WG_MASS as f64}, 
+            s if s == StarTypes::WG as i64 => {max_system_mass = (StarCalc::WG_MASS) as f64; min_system_mass = StarCalc::WK_MASS as f64}, 
+            s if s == StarTypes::WK as i64 => {max_system_mass = (StarCalc::WK_MASS) as f64; min_system_mass = StarCalc::L_MASS as f64}, 
+            s if s == StarTypes::L as i64 => {max_system_mass = (StarCalc::L_MASS) as f64; min_system_mass = StarCalc::L_MIN_MASS as f64}, 
 
             _=> println!("Bad star type of {} found in mass calc.", star_type)
         }
