@@ -2,6 +2,8 @@
 
 use rand::Rng;
 
+use super::World;
+
 pub struct StarCalc {
 }
 
@@ -53,6 +55,18 @@ impl StarCalc {
     const L_MASS : f32 = 0.1;
     const L_MIN_MASS : f32 = 0.005;
 
+    // this is all based on the solar system.  I don't really have time to make something that looks like the rest of the universe.
+    const MASS_OF_EARTH : f64 = 5972200000000000000000000.0; // In KG
+    const MASS_OF_MINOR_BODIES_RATIO : f64 = 0.0000015; // You read that right, very little asteroids, comets, iceball mass actually exist in a planetary system
+    const MASS_OF_TERRESTRIAL_PLANETS_RATIO : f64 = 0.00443; // Still comparatively small 
+    const MASS_OF_ICE_GIANTS_RATIO : f64 = 0.0708; // Still pretty small
+    const MASS_OF_GAS_GIANTS_RATIO : f64 = 1.0 - StarCalc::MASS_OF_MINOR_BODIES_RATIO - StarCalc::MASS_OF_TERRESTRIAL_PLANETS_RATIO - StarCalc::MASS_OF_ICE_GIANTS_RATIO;
+
+    // in earth masses
+    const MIN_GAS_GIANT : f64 = 3.0; // These are based on research
+    const MAX_GAS_GIANT : f64 = 3180.0; // These are based on research
+    const MIN_ICE_GIANT : f64 = 1.5; // These are kind of arbitrary limits based on my intuition.
+    const MAX_ICE_GIANT : f64 = 7.0; // These are kind of arbitrary limits based on my intuition.
 
     pub fn new_random_star_type() -> i64 {
         let mut star_type : i64 = StarTypes::BH as i64;
@@ -129,6 +143,32 @@ impl StarCalc {
         system_mass * StarCalc::WORLDS_TO_SUN_MASS_RATIO * StarCalc::SOLAR_MASSES_TO_KG
     }
 
+    pub fn get_gas_giant_mass(planet_mass : f64) -> f64 {
+        planet_mass * StarCalc::MASS_OF_GAS_GIANTS_RATIO
+    }
+
+    pub fn get_ice_giant_mass(planet_mass : f64) -> f64 {
+        planet_mass * StarCalc::MASS_OF_ICE_GIANTS_RATIO
+    }
+
+    pub fn get_rocky_mass(planet_mass : f64) -> f64 {
+        planet_mass * StarCalc::MASS_OF_TERRESTRIAL_PLANETS_RATIO
+    }
+
+    pub fn get_minor_mass(planet_mass : f64) -> f64 {
+        planet_mass * StarCalc::MASS_OF_MINOR_BODIES_RATIO
+    }
+
+    pub fn generate_random_gas_giants(mass : f64) -> Vec<World>{
+        let mut new_planets : Vec<World> = Vec::new();
+
+        if mass / StarCalc::MIN_GAS_GIANT < 1.0 {
+            
+
+        }
+
+
+    }
 
 }
 

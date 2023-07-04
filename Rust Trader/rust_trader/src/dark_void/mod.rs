@@ -295,7 +295,7 @@ impl World{
     const JUPITER_LIKE : i64 = World::HIGH_GRAVITY | World::MAGNETIC_FIELD | World::HYDROGEN | World::NATURAL_SATELLITES | World::TOXIC_ATMOSPHERE;
     const SATURN_LIKE : i64 = World::JUPITER_LIKE | World::RINGS;
 
-    const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::EXTREME_COLD | World::TOXIC_ATMOSPHERE; // Neptune and Uranus
+    const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::EXTREME_COLD | World::TOXIC_ATMOSPHERE | World::HYDROGEN; // Neptune and Uranus
 
     const BIOLOGICAL_GAS_GIANT : i64 = World::INSIDE_HABITABLE_ZONE | World::OXYGENATION | World::HIGH_GRAVITY | World::HYDROGEN | World::HIGH_PRESSURE_ATMOSPHERE | World::NATURAL_ANIMAL_BIOLOGY | World::TOLDERABLE_DISASTERS | World::NATURAL_SATELLITES;
 
@@ -382,6 +382,13 @@ impl System {
         let system_mass : f64 = star_calcs::StarCalc::get_random_system_mass(star_type);
         let planet_mass : f64 = star_calcs::StarCalc::get_planet_mass(system_mass);
         
+        let gas_mass : f64 = star_calcs::StarCalc::get_gas_giant_mass(planet_mass);
+        let ice_mass : f64 = star_calcs::StarCalc::get_ice_giant_mass(planet_mass);
+        let rocky_mass : f64 = star_calcs::StarCalc::get_rocky_mass(planet_mass);
+        let minor_mass : f64 = star_calcs::StarCalc::get_minor_mass(planet_mass);
+
+        
+
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
         let pirate_presence : f32;
