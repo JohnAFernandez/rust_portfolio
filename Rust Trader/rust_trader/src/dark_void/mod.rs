@@ -164,8 +164,7 @@ fn build_player(name: String, credits: i64) -> Player {
     }
 }
 
-
-struct IndustryStats{
+pub struct IndustryStats{
     type_: IndustryTypes,
     efficiency : f32, // how many man hours per kilogram ...
     requires : i32  // from WorldCharacterists
@@ -178,7 +177,7 @@ fn build_industry_stats(type_: IndustryTypes, efficiency : f32, requires : i32) 
 }
 
 
-struct Industry {
+pub struct Industry {
     name : String,
     capacity : f64,
     employees : i128,
@@ -243,7 +242,7 @@ impl Orbit {
    
 }
 
-struct World {
+pub struct World {
     name : String,
     mass : f64,
     industries : Vec<Industry>,
@@ -285,6 +284,8 @@ impl World{
     const OCEANS : i64 = 1 << 26;
     const TECTONICALLY_ACTIVE : i64 = 1 << 27;
     const NATURAL_SATELLITES : i64 = 1 << 28;
+    const ICE_MANTLE : i64 = 1 << 29; // Marker as an ice giant.
+    const NATURAL_CIV : i64 = 1 << 30; // ALIENS YOU CAN TALK TO! ... Or not. :p
 
     // Aggregates
     const MERCURY_LIKE : i64 = World::RAW_MATERIALS | World::EXTREME_COLD | World::EXTREME_HEAT | World::NO_ATMOSPHERE | World::TIDALLY_LOCKED;    
@@ -295,13 +296,12 @@ impl World{
     const JUPITER_LIKE : i64 = World::HIGH_GRAVITY | World::MAGNETIC_FIELD | World::HYDROGEN | World::NATURAL_SATELLITES | World::TOXIC_ATMOSPHERE;
     const SATURN_LIKE : i64 = World::JUPITER_LIKE | World::RINGS;
 
-    const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::EXTREME_COLD | World::TOXIC_ATMOSPHERE | World::HYDROGEN; // Neptune and Uranus
+    const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::TOXIC_ATMOSPHERE | World::HYDROGEN | World::MAGNETIC_FIELD | World::NATURAL_SATELLITES | World::RINGS | World::ICE_MANTLE; // Neptune and Uranus, differentiated by cold.
 
     const BIOLOGICAL_GAS_GIANT : i64 = World::INSIDE_HABITABLE_ZONE | World::OXYGENATION | World::HIGH_GRAVITY | World::HYDROGEN | World::HIGH_PRESSURE_ATMOSPHERE | World::NATURAL_ANIMAL_BIOLOGY | World::TOLDERABLE_DISASTERS | World::NATURAL_SATELLITES;
 
 
-
-    fn build_world (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i64) -> World {
+    pub fn build_world (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i64) -> World {
         World{ name, mass, industries, population, supports}
     }    
 }
@@ -382,8 +382,9 @@ impl System {
         let system_mass : f64 = star_calcs::StarCalc::get_random_system_mass(star_type);
         let planet_mass : f64 = star_calcs::StarCalc::get_planet_mass(system_mass);
         
-        let gas_mass : f64 = star_calcs::StarCalc::get_gas_giant_mass(planet_mass);
-        let ice_mass : f64 = star_calcs::StarCalc::get_ice_giant_mass(planet_mass);
+        let mut worlds : Vec<World> = Vec::new();
+        worlds = star_calcs::StarCalc::generate_random_gas_giants(star_calcs::StarCalc::get_gas_giant_mass(planet_mass), worlds);
+        worlds = star_calcs::StarCalc::generate_random_ice_giants(star_calcs::StarCalc::get_ice_giant_mass(planet_mass), worlds);
         let rocky_mass : f64 = star_calcs::StarCalc::get_rocky_mass(planet_mass);
         let minor_mass : f64 = star_calcs::StarCalc::get_minor_mass(planet_mass);
 

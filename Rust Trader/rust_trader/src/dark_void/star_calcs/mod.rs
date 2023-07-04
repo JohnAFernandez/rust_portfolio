@@ -159,16 +159,82 @@ impl StarCalc {
         planet_mass * StarCalc::MASS_OF_MINOR_BODIES_RATIO
     }
 
-    pub fn generate_random_gas_giants(mass : f64) -> Vec<World>{
-        let mut new_planets : Vec<World> = Vec::new();
+    const MAX_JUPITER_LIKE_CHANCE : f64 = 0.60;
+    const MAX_SATURN_LIKE_CHANCE : f64 = 0.95;
 
-        if mass / StarCalc::MIN_GAS_GIANT < 1.0 {
-            
+    pub fn generate_random_gas_giants(mass : f64, mut worlds : Vec<World>) -> Vec<World>{
+        let max_planets: f64 = mass / StarCalc::MIN_GAS_GIANT;
 
+
+        // this basically enforces 
+        if  max_planets < 1.0 {
+            worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass, Vec::new(), 0, World::JUPITER_LIKE));
+            return worlds;
         }
 
+        let mut planets = 0;
+        let mut remaining_mass :f64 = mass;
+        let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
+        while (planets as f64) < max_planets {
+            let mass_rand : f64 = rng.gen_range(StarCalc::MIN_GAS_GIANT..StarCalc::MAX_GAS_GIANT);
+            remaining_mass -= mass_rand;
+            
+            let type_rand : f64 = rng.gen();
+            let type_flags : i64;
+
+            match type_rand{
+                t if t >= 0.0 && t < StarCalc::MAX_JUPITER_LIKE_CHANCE => type_flags = World::JUPITER_LIKE,
+                t if t >= StarCalc::MAX_JUPITER_LIKE_CHANCE && t < StarCalc::MAX_SATURN_LIKE_CHANCE => type_flags = World::SATURN_LIKE,
+                t if t >= StarCalc::MAX_SATURN_LIKE_CHANCE && t <= 1.0 => type_flags = World::BIOLOGICAL_GAS_GIANT,
+                _=> {println!("BAD chance in generate random gas giants of {} defaulting to Jupiter-like", type_rand); type_flags = World::JUPITER_LIKE}
+            }
+
+            worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass_rand, Vec::new(), 0, type_flags));
+
+            if remaining_mass < StarCalc::MIN_GAS_GIANT{
+                worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass, Vec::new(), 0, World::JUPITER_LIKE));
+                break;
+            }
+
+            planets += 1;
+        }
+
+        worlds
     }
+
+    pub fn generate_random_ice_giants(mass : f64, mut worlds : Vec<World>) -> Vec<World> {
+        let max_planets: f64 = mass / StarCalc::MIN_ICE_GIANT;
+
+
+        // this basically enforces 
+        if  max_planets < 1.0 {
+            worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass, Vec::new(), 0, World::ICE_GIANT));
+            return worlds;
+        }
+
+        let mut planets = 0;
+        let mut remaining_mass : f64 = mass;
+        let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
+
+        while (planets as f64) < max_planets {
+            let mass_rand: f64 = rng.gen_range(StarCalc::MIN_ICE_GIANT..StarCalc::MAX_ICE_GIANT);
+            remaining_mass -= mass_rand;
+            
+            worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass_rand, Vec::new(), 0, World::ICE_GIANT));
+
+            if remaining_mass < StarCalc::MIN_GAS_GIANT{
+                worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass, Vec::new(), 0, World::ICE_GIANT));
+                break;
+            }
+
+            planets += 1;
+        }
+
+        worlds
+    }
+    
+
 
 }
 
