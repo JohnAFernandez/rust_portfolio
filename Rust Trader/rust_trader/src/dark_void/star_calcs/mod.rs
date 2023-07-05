@@ -159,8 +159,7 @@ impl StarCalc {
         planet_mass * StarCalc::MASS_OF_MINOR_BODIES_RATIO
     }
 
-    const MAX_JUPITER_LIKE_CHANCE : f64 = 0.60;
-    const MAX_SATURN_LIKE_CHANCE : f64 = 0.95;
+    const MAX_JUPITER_LIKE_CHANCE : f64 = 0.70;
 
     pub fn generate_random_gas_giants(mass : f64, mut worlds : Vec<World>) -> Vec<World>{
         let max_planets: f64 = mass / StarCalc::MIN_GAS_GIANT;
@@ -185,8 +184,7 @@ impl StarCalc {
 
             match type_rand{
                 t if t >= 0.0 && t < StarCalc::MAX_JUPITER_LIKE_CHANCE => type_flags = World::JUPITER_LIKE,
-                t if t >= StarCalc::MAX_JUPITER_LIKE_CHANCE && t < StarCalc::MAX_SATURN_LIKE_CHANCE => type_flags = World::SATURN_LIKE,
-                t if t >= StarCalc::MAX_SATURN_LIKE_CHANCE && t <= 1.0 => type_flags = World::BIOLOGICAL_GAS_GIANT,
+                t if t >= StarCalc::MAX_JUPITER_LIKE_CHANCE && t <= 1.0 => type_flags = World::SATURN_LIKE,
                 _=> {println!("BAD chance in generate random gas giants of {} defaulting to Jupiter-like", type_rand); type_flags = World::JUPITER_LIKE}
             }
 
@@ -234,6 +232,18 @@ impl StarCalc {
         worlds
     }
     
+    pub fn generate_random_rocky_planets(planet_mass : f64, mut worlds : Vec<World>) -> Vec<World> {
+    
+
+        worlds
+    }
+
+    pub fn generate_random_minor_planets(planet_mass : f64, mut worlds : Vec<World>) -> Vec<World> {
+        let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
+        let num_worlds : i32 = rng.gen_range(8 .. 22);         
+
+        worlds
+    }
 
 
 }

@@ -385,6 +385,7 @@ impl System {
         let mut worlds : Vec<World> = Vec::new();
         worlds = star_calcs::StarCalc::generate_random_gas_giants(star_calcs::StarCalc::get_gas_giant_mass(planet_mass), worlds);
         worlds = star_calcs::StarCalc::generate_random_ice_giants(star_calcs::StarCalc::get_ice_giant_mass(planet_mass), worlds);
+        worlds = star_calcs::StarCalc::generate_random_rocky_planets(star_calcs::StarCalc::get_rocky_mass(planet_mass));
         let rocky_mass : f64 = star_calcs::StarCalc::get_rocky_mass(planet_mass);
         let minor_mass : f64 = star_calcs::StarCalc::get_minor_mass(planet_mass);
 
