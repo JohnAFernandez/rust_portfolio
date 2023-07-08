@@ -415,19 +415,22 @@ impl System {
         unsafe{
             TEST_COUNT += 1;
         
+            if TEST_COUNT < 10{
+                println!("System {}, {}", TEST_COUNT, self.star_type)
+            }
 
         for world in &self.worlds{
             let ice_giant : bool = world.supports & World::ICE_MANTLE > 0;
-            let gas_giant : bool = world.supports & World::JUPITER_LIKE > 0;
-            let rock_world : bool = !ice_giant || !gas_giant;
+            let gas_giant : bool = !ice_giant && world.supports & World::JUPITER_LIKE > 0;
+            let rock_world : bool = !ice_giant && !gas_giant;
 
             if TEST_COUNT < 10{
                 if rock_world {
-                    println!("Rock World: Name {}, Mass {}, {}", world.name, world.mass, world.supports);
+                    println!("Rock World: Name {}, Earth Masses {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
                 } else  if gas_giant {
-                    println!("Gas Giant: Name {}, Mass {}, {}", world.name, world.mass, world.supports);
+                    println!("Gas Giant: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
                 } else if ice_giant {
-                    println!("Ice Giant: Name {}, Mass {}, {}", world.name, world.mass, world.supports);
+                    println!("Ice Giant: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
                 }
             }
         }

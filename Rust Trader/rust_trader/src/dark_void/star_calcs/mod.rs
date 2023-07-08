@@ -6,6 +6,8 @@ use super::World;
 pub struct StarCalc {
 }
 
+static mut DEBUG : bool = false;
+
 impl StarCalc {
     // The chance of each star appearing
     const GA_CHANCE_MAX : f32 = 0.000015;
@@ -55,18 +57,18 @@ impl StarCalc {
     const L_MIN_MASS : f32 = 0.005;
 
     // this is all based on the solar system.  I don't really have time to make something that looks like the rest of the universe.
-    const MASS_OF_EARTH : f64 = 5972200000000000000000000.0; // In KG
+    pub const MASS_OF_EARTH : f64 = 5972200000000000000000000.0; // In KG
     const MASS_OF_MINOR_BODIES_RATIO : f64 = 0.0000015; // You read that right, very little asteroids, comets, iceball mass actually exist in a planetary system
     const MASS_OF_TERRESTRIAL_PLANETS_RATIO : f64 = 0.00443; // Still comparatively small 
     const MASS_OF_ICE_GIANTS_RATIO : f64 = 0.0708; // Still pretty small
     const MASS_OF_GAS_GIANTS_RATIO : f64 = 1.0 - StarCalc::MASS_OF_MINOR_BODIES_RATIO - StarCalc::MASS_OF_TERRESTRIAL_PLANETS_RATIO - StarCalc::MASS_OF_ICE_GIANTS_RATIO;
 
     // in earth masses
-    const MIN_GAS_GIANT : f64 = 3.0; // These are based on quick research
-    const MAX_GAS_GIANT : f64 = 3180.0; // These are based on quick research
-    const MIN_ICE_GIANT : f64 = 5.0; // These are kind of arbitrary limits based on my intuition.
-    const MAX_ICE_GIANT : f64 = 30.0; // These are kind of arbitrary limits based on my intuition.
-    const MAX_SUPER_EARTH : f64 = 10.0; // Biggest super earth found so far is about this size.
+    const MIN_GAS_GIANT_MASS : f64 = 3.0 * StarCalc::MASS_OF_EARTH; // These are based on quick research
+    const MAX_GAS_GIANT_MASS : f64 = 3180.0 * StarCalc::MASS_OF_EARTH; // These are based on quick research
+    const MIN_ICE_GIANT_MASS : f64 = 5.0 * StarCalc::MASS_OF_EARTH; // These are kind of arbitrary limits based on my intuition.
+    const MAX_ICE_GIANT_MASS : f64 = 30.0 * StarCalc::MASS_OF_EARTH; // These are kind of arbitrary limits based on my intuition.
+    const MAX_SUPER_EARTH_MASS : f64 = 10.0 * StarCalc::MASS_OF_EARTH; // Biggest super earth found so far is about this size.
 
     pub fn new_random_star_type() -> i64 {
         let mut star_type : i64 = StarTypes::BH as i64;
@@ -162,12 +164,10 @@ impl StarCalc {
     const MAX_JUPITER_LIKE_CHANCE : f64 = 0.70;
 
     pub fn generate_random_gas_giants(mass : f64, mut worlds : Vec<World>) -> Vec<World>{
-        let max_planets: f64 = mass / StarCalc::MIN_GAS_GIANT;
+        let max_planets: f64 = mass / (StarCalc::MIN_GAS_GIANT_MASS);
 
-
-        // this basically enforces 
+        // enforce minimum planet size.
         if  max_planets < 1.0 {
-            worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass, Vec::new(), 0, World::JUPITER_LIKE));
             return worlds;
         }
 
@@ -176,7 +176,7 @@ impl StarCalc {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
         while (planets as f64) < max_planets {
-            let mass_rand: f64 = f64::powf(rng.gen_range(1.0..2.0), 11.6348110502) + StarCalc::MIN_GAS_GIANT - 1.0;
+            let mass_rand: f64 = (f64::powf(rng.gen_range(1.0..2.0), 11.6348110502) -1.0) * StarCalc::MIN_GAS_GIANT_MASS;
             remaining_mass -= mass_rand;
             
             let type_rand : f64 = rng.gen();
@@ -190,7 +190,7 @@ impl StarCalc {
 
             worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass_rand, Vec::new(), 0, type_flags));
 
-            if remaining_mass < StarCalc::MIN_GAS_GIANT{
+            if remaining_mass < StarCalc::MIN_GAS_GIANT_MASS{
                 worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass, Vec::new(), 0, World::JUPITER_LIKE));
                 break;
             }
@@ -202,12 +202,16 @@ impl StarCalc {
     }
 
     pub fn generate_random_ice_giants(mass : f64, mut worlds : Vec<World>) -> Vec<World> {
-        let max_planets: f64 = mass / StarCalc::MIN_ICE_GIANT;
+        let max_planets: f64 = mass / StarCalc::MIN_ICE_GIANT_MASS;
 
+        unsafe{
+            if !DEBUG {println!("max_planets {} from mass {} and min ice giant mass {}", max_planets, mass, StarCalc::MIN_ICE_GIANT_MASS);
+                DEBUG = true;
+            }
+        }
 
-        // this basically enforces 
+        // this basically enforces minimum planet size
         if  max_planets < 1.0 {
-            worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass, Vec::new(), 0, World::ICE_GIANT));
             return worlds;
         }
 
@@ -216,12 +220,12 @@ impl StarCalc {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
         while (planets as f64) < max_planets {
-            let mass_rand: f64 = f64::powf(rng.gen_range(1.0..2.0), 4.6438561898) + StarCalc::MIN_ICE_GIANT - 1.0;
+            let mass_rand: f64 = (f64::powf(rng.gen_range(1.0..2.0), 4.6438561898) - 1.0) * StarCalc::MIN_ICE_GIANT_MASS;
             remaining_mass -= mass_rand;
             
             worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass_rand, Vec::new(), 0, World::ICE_GIANT));
 
-            if remaining_mass < StarCalc::MIN_GAS_GIANT{
+            if remaining_mass < StarCalc::MIN_GAS_GIANT_MASS{
                 worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass, Vec::new(), 0, World::ICE_GIANT));
                 break;
             }
@@ -240,14 +244,13 @@ impl StarCalc {
         let mut x : i32 = 0;
         while x < num_worlds && remaining_mass > 0.0 {
             // this circumvents having to write a long match statement, since this gives a max of 10, the largest known super earth 
-            let mut mass : f64 = f64::powf(0.5 + rng.gen::<f64>(), 5.6788735873);
+            let mut mass : f64 = f64::powf(0.5 + rng.gen::<f64>(), 5.6788735873) * StarCalc::MASS_OF_EARTH;
 
-            if mass >  StarCalc::MAX_SUPER_EARTH {
-                mass = StarCalc::MAX_SUPER_EARTH;
+            if mass >  StarCalc::MAX_SUPER_EARTH_MASS {
+                mass = StarCalc::MAX_SUPER_EARTH_MASS;
             }
 
-
-            remaining_mass -= mass;
+            remaining_mass -= mass * StarCalc::MASS_OF_EARTH;
             x += 1;
         }
 
