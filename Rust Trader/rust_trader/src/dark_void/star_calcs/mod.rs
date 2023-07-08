@@ -46,7 +46,7 @@ impl StarCalc {
     const G_MASS : f32 = 0.9;
     const K_MASS : f32 = 0.625;
     const M_MASS : f32 = 0.26;
-    const BH_MASS : f32 = 71.0;
+    const BH_MASS : f32 = 20.0; // small stellar black hole.  
     const NS_MASS : f32 = 1.6;
     const WB_MASS : f32 = 0.75;
     const WA_MASS : f32 = 0.75;
@@ -55,6 +55,22 @@ impl StarCalc {
     const WK_MASS : f32 = 0.75;
     const L_MASS : f32 = 0.1;
     const L_MIN_MASS : f32 = 0.005;
+
+    // Magnitudes are backwards.
+    const O_MIN_MAGNITUDE : f32 = -2.0;
+    const O_MAX_MAGNITUDE : f32 = -10.0;
+    const B_MIN_MAGNITUDE : f32 = 1.0;
+    const B_MAX_MAGNITUDE : f32 = -5.0;
+    const A_MIN_MAGNITUDE : f32 = 2.75;
+    const A_MAX_MAGNITUDE : f32 = -1.75;
+    const F_MIN_MAGNITUDE : f32 = 4.25;
+    const F_MAX_MAGNITUDE : f32 = 0.0;
+    const G_MIN_MAGNITUDE : f32 = 8.25;
+    const G_MAX_MAGNITUDE : f32 = 1.75;
+    const K_MIN_MAGNITUDE : f32 = 10.75;
+    const K_MAX_MAGNITUDE : f32 = 4.5;
+    const M_MIN_MAGNITUDE : f32 = 16.0;
+    const M_MAX_MAGNITUDE : f32 = 8.5;
 
     // this is all based on the solar system.  I don't really have time to make something that looks like the rest of the universe.
     pub const MASS_OF_EARTH : f64 = 5972200000000000000000000.0; // In KG
@@ -176,7 +192,7 @@ impl StarCalc {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
         while (planets as f64) < max_planets {
-            let mass_rand: f64 = (f64::powf(rng.gen_range(1.0..2.0), 11.6348110502) -1.0) * StarCalc::MIN_GAS_GIANT_MASS;
+            let mass_rand: f64 = f64::powf(rng.gen_range(1.0..2.0), 11.6348110502) * StarCalc::MIN_GAS_GIANT_MASS;
             remaining_mass -= mass_rand;
             
             let type_rand : f64 = rng.gen();
@@ -191,7 +207,6 @@ impl StarCalc {
             worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass_rand, Vec::new(), 0, type_flags));
 
             if remaining_mass < StarCalc::MIN_GAS_GIANT_MASS{
-                worlds.push(World::build_world(String::from("TEST GAS GIANT"), mass, Vec::new(), 0, World::JUPITER_LIKE));
                 break;
             }
 
@@ -204,12 +219,6 @@ impl StarCalc {
     pub fn generate_random_ice_giants(mass : f64, mut worlds : Vec<World>) -> Vec<World> {
         let max_planets: f64 = mass / StarCalc::MIN_ICE_GIANT_MASS;
 
-        unsafe{
-            if !DEBUG {println!("max_planets {} from mass {} and min ice giant mass {}", max_planets, mass, StarCalc::MIN_ICE_GIANT_MASS);
-                DEBUG = true;
-            }
-        }
-
         // this basically enforces minimum planet size
         if  max_planets < 1.0 {
             return worlds;
@@ -220,13 +229,12 @@ impl StarCalc {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
         while (planets as f64) < max_planets {
-            let mass_rand: f64 = (f64::powf(rng.gen_range(1.0..2.0), 4.6438561898) - 1.0) * StarCalc::MIN_ICE_GIANT_MASS;
+            let mass_rand: f64 = (f64::powf(rng.gen_range(1.0..2.0), 4.6438561898)) * StarCalc::MIN_ICE_GIANT_MASS;
             remaining_mass -= mass_rand;
             
             worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass_rand, Vec::new(), 0, World::ICE_GIANT));
 
             if remaining_mass < StarCalc::MIN_GAS_GIANT_MASS{
-                worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass, Vec::new(), 0, World::ICE_GIANT));
                 break;
             }
 
@@ -236,7 +244,7 @@ impl StarCalc {
         worlds
     }
     
-    pub fn generate_random_rocky_planets(planet_mass : f64,  worlds : Vec<World>) -> Vec<World> {
+    pub fn generate_random_rocky_planets(planet_mass : f64, mut worlds : Vec<World>) -> Vec<World> {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
         let num_worlds : i32 = rng.gen_range(0 .. 7);
         let mut remaining_mass = planet_mass;
@@ -244,13 +252,22 @@ impl StarCalc {
         let mut x : i32 = 0;
         while x < num_worlds && remaining_mass > 0.0 {
             // this circumvents having to write a long match statement, since this gives a max of 10, the largest known super earth 
-            let mut mass : f64 = f64::powf(0.5 + rng.gen::<f64>(), 5.6788735873) * StarCalc::MASS_OF_EARTH;
+            let mut rand_mass : f64 = f64::powf(0.5 + rng.gen::<f64>(), 5.6788735873) * StarCalc::MASS_OF_EARTH;
 
-            if mass >  StarCalc::MAX_SUPER_EARTH_MASS {
-                mass = StarCalc::MAX_SUPER_EARTH_MASS;
+            if rand_mass >  StarCalc::MAX_SUPER_EARTH_MASS {
+                rand_mass = StarCalc::MAX_SUPER_EARTH_MASS;
             }
 
-            remaining_mass -= mass * StarCalc::MASS_OF_EARTH;
+            // TODO! Not everything can be like earth, start making random flags, and calc the habitable range
+
+            remaining_mass -= rand_mass;
+            worlds.push(World::build_world(String::from("TEST Earth Like"), rand_mass, Vec::new(), 0, World::EARTH_LIKE));
+
+            if rand_mass < StarCalc::MAX_SUPER_EARTH_MASS{
+                break;
+            }
+
+
             x += 1;
         }
 
@@ -264,7 +281,56 @@ impl StarCalc {
         worlds
     }
 
+    // based on a formula found online at plantearybiology.com
+    pub fn habitable_range(star_type : i64) -> (f32,f32) {
 
+        let conversion_value: f32; 
+        let absolute_brightness: f32 = 0.0;
+        let max_magnitude: f32;
+        let min_magnitude: f32;
+
+        match star_type {
+            s if s == StarTypes::GA as i64 => {max_magnitude = -10.0; min_magnitude = -10.0; conversion_value = 0.0},
+            s if s == StarTypes::GF as i64 => {max_magnitude = -10.0; min_magnitude = -10.0; conversion_value = 0.0},
+            s if s == StarTypes::GG as i64 => {max_magnitude = -10.0; min_magnitude = -10.0; conversion_value = 0.0},
+            s if s == StarTypes::GK as i64 => {max_magnitude = -10.0; min_magnitude = -10.0; conversion_value = 0.0},                        
+            s if s == StarTypes::GM as i64 => {max_magnitude = -10.0; min_magnitude = -10.0; conversion_value = 0.0},                        
+            s if s == StarTypes::O as i64 => {max_magnitude = -10.0; min_magnitude = -10.0; conversion_value = 0.0}, 
+            s if s == StarTypes::B as i64 => {max_magnitude = StarCalc::B_MAX_MAGNITUDE; min_magnitude = StarCalc::B_MIN_MAGNITUDE; conversion_value = -2.0},                        
+            s if s == StarTypes::A as i64 => {max_magnitude = StarCalc::A_MAX_MAGNITUDE; min_magnitude = StarCalc::A_MIN_MAGNITUDE; conversion_value = -0.3},                         
+            s if s == StarTypes::F as i64 => {max_magnitude = StarCalc::F_MAX_MAGNITUDE; min_magnitude = StarCalc::F_MIN_MAGNITUDE; conversion_value = -0.15}, 
+            s if s == StarTypes::G as i64 => {max_magnitude = StarCalc::G_MAX_MAGNITUDE; min_magnitude = StarCalc::G_MIN_MAGNITUDE; conversion_value = -0.4}, 
+            s if s == StarTypes::K as i64 => {max_magnitude = StarCalc::K_MAX_MAGNITUDE; min_magnitude = StarCalc::K_MIN_MAGNITUDE; conversion_value = -0.8}, 
+            s if s == StarTypes::M as i64 => {max_magnitude = StarCalc::M_MAX_MAGNITUDE; min_magnitude = StarCalc::M_MIN_MAGNITUDE; conversion_value = -2.0},                         
+            s if s == StarTypes::BH as i64 => {max_magnitude = 20.0; min_magnitude = 20.0; conversion_value = 0.0}, 
+            s if s == StarTypes::NS as i64 => {max_magnitude = StarCalc::M_MAX_MAGNITUDE; min_magnitude = StarCalc::M_MIN_MAGNITUDE; conversion_value = 0.0}, 
+            s if s == StarTypes::WB as i64 => {max_magnitude = StarCalc::M_MAX_MAGNITUDE; min_magnitude = StarCalc::M_MIN_MAGNITUDE; conversion_value = 0.0}, 
+            s if s == StarTypes::WA as i64 => {max_magnitude = StarCalc::M_MAX_MAGNITUDE; min_magnitude = StarCalc::M_MIN_MAGNITUDE; conversion_value = 0.0}, 
+            s if s == StarTypes::WF as i64 => {max_magnitude = StarCalc::M_MAX_MAGNITUDE; min_magnitude = StarCalc::M_MIN_MAGNITUDE; conversion_value = 0.0}, 
+            s if s == StarTypes::WG as i64 => {max_magnitude = StarCalc::M_MAX_MAGNITUDE; min_magnitude = StarCalc::M_MIN_MAGNITUDE; conversion_value = 0.0}, 
+            s if s == StarTypes::WK as i64 => {max_magnitude = StarCalc::M_MAX_MAGNITUDE; min_magnitude = StarCalc::M_MIN_MAGNITUDE; conversion_value = 0.0}, 
+            s if s == StarTypes::L as i64 => {max_magnitude = 20.0; min_magnitude = 20.0; conversion_value = 0.0}, 
+            _=> {println!("Unknown star type in habitable min"); max_magnitude = 20.0; min_magnitude = 20.0; conversion_value = 0.0 }
+        }
+
+        let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
+        let rand_mag = rng.gen_range(max_magnitude..min_magnitude);
+
+        // forumla is Absolute Magnitude (rand_mag) - table value - 4.72, divided by -2.5
+        // raise 10 to that value.  Then the inner is done by dividng that by 1.1 and then
+        // taking the square root.  And the outer is done by dividn that by 0.53 and then
+        // then again taking the square root.
+        const SUBTRACT_FACTOR: f32 = -4.72;
+        const POWER_BASE: f32 = 10.0;
+        const DIVISION_VALUE: f32 = -2.5;
+
+        let intermediate_value : f32 = POWER_BASE.powf((rand_mag + conversion_value + SUBTRACT_FACTOR) / DIVISION_VALUE); 
+
+        const INNER_DIVIDE:f32 = 1.1;
+        const OUTER_DIVIDE:f32 = 0.53;
+
+        ((intermediate_value / INNER_DIVIDE).sqrt(), (intermediate_value / OUTER_DIVIDE).sqrt())
+    }
 }
 
 

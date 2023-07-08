@@ -5,6 +5,8 @@ use std::collections::HashMap;
 //use std::ops;
 //use std::num;
 use rand::Rng;
+
+use self::star_calcs::StarCalc;
 //use sqlite;
 
 mod star_calcs;
@@ -365,6 +367,7 @@ struct System {
     location : StarmapLocation,
     gdp : i64,
     star_type : i64,
+    habitable_zone : (f32, f32),
     worlds : Vec<World>,
     space_materials : f64,
     police_presence : f32,
@@ -372,8 +375,8 @@ struct System {
 }
 
 impl System {
-    fn build_system(name : String, location : StarmapLocation, gdp : i64, star_type : i64, worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
-        System{name, location, gdp, star_type, worlds, space_materials, police_presence, pirate_presence}
+    fn build_system(name : String, location : StarmapLocation, gdp : i64, star_type : i64, habitable_zone : (f32, f32), worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
+        System{name, location, gdp, star_type, habitable_zone, worlds, space_materials, police_presence, pirate_presence}
     }    
 
 
@@ -386,6 +389,8 @@ impl System {
         let system_mass : f64 = star_calcs::StarCalc::get_random_system_mass(star_type);
         let planet_mass : f64 = star_calcs::StarCalc::get_planet_mass(system_mass);
         
+        let habitable_range= star_calcs::StarCalc::habitable_range(star_type);
+
         let mut worlds : Vec<World> = Vec::new();
         worlds = star_calcs::StarCalc::generate_random_gas_giants(star_calcs::StarCalc::get_gas_giant_mass(planet_mass), worlds);
         worlds = star_calcs::StarCalc::generate_random_ice_giants(star_calcs::StarCalc::get_ice_giant_mass(planet_mass), worlds);
@@ -405,7 +410,7 @@ impl System {
         }
 
         
-        System::build_system(String::from("Test"), location, 10000000, star_type, worlds, system_mass, police_presence, pirate_presence)
+        System::build_system(String::from("Test"), location, 10000000, star_type, habitable_range, worlds, system_mass, police_presence, pirate_presence)
     }
 
     // make sure everything is as it should be.
@@ -419,22 +424,23 @@ impl System {
                 println!("System {}, {}", TEST_COUNT, self.star_type)
             }
 
-        for world in &self.worlds{
-            let ice_giant : bool = world.supports & World::ICE_MANTLE > 0;
-            let gas_giant : bool = !ice_giant && world.supports & World::JUPITER_LIKE > 0;
-            let rock_world : bool = !ice_giant && !gas_giant;
+            for world in &self.worlds{
+                let ice_giant : bool = world.supports & World::ICE_MANTLE > 0;
+                let gas_giant : bool = !ice_giant && world.supports & World::JUPITER_LIKE > 0;
+                let rock_world : bool = !ice_giant && !gas_giant;
 
-            if TEST_COUNT < 10{
-                if rock_world {
-                    println!("Rock World: Name {}, Earth Masses {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
-                } else  if gas_giant {
-                    println!("Gas Giant: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
-                } else if ice_giant {
-                    println!("Ice Giant: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
+                if TEST_COUNT < 10{
+                    if rock_world {
+                        println!("Rock World: Name {}, Earth Masses {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
+                    } else  if gas_giant {
+                        println!("Gas Giant: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
+                    } else if ice_giant {
+                        println!("Ice Giant: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
+                    } else {
+                        println!("HUH?: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
+                    }
                 }
             }
-        }
-
         }
     }
 
@@ -515,7 +521,7 @@ impl GameplayState {
     
         let mut state = GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), difficulty, systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_result_stack(0), multiplayer_stack : HashMap::new()};
 
-        let sol_system = System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, star_calcs::StarTypes::F as i64, Vec::new(), 0.0, 100.0, 5.0);
+        let sol_system = System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, star_calcs::StarTypes::F as i64, (0.9534625892, 1.373605639),Vec::new(), 0.0, 100.0, 5.0);
 
         state.systems.push(sol_system);
 
