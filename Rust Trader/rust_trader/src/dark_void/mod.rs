@@ -259,7 +259,7 @@ impl World{
     const NATURAL_SOIL : i64 = 1 << 3;           // False means no carbon, but it essentially means that to do farming, soil does not need to be imported.
     const NATURAL_ANIMAL_BIOLOGY : i64 = 1 << 4;     
     const EARTH_GRAVITY : i64 = 1 << 5;
-    const TOLDERABLE_DISASTERS : i64 = 1 << 6;
+    const TOLERABLE_DISASTERS : i64 = 1 << 6;
     const HYDROGEN : i64 = 1 << 7;
     const INSIDE_HABITABLE_ZONE : i64 = 1 << 8;
     const MAGNETIC_FIELD : i64 = 1 << 9;    // this is a prerequisite for life.
@@ -278,6 +278,7 @@ impl World{
     const ACIDIC : i64 = 1 << 21;
     const ALKALINE : i64 = 1 << 22;
     const HIGH_GRAVITY : i64 = 1 << 23;
+    const HIGH_VOLCANISM : i64 = 1 << 24;
 
     // Nutral stuff
     const RINGS : i64 = 1 << 25;
@@ -286,11 +287,12 @@ impl World{
     const NATURAL_SATELLITES : i64 = 1 << 28;
     const ICE_MANTLE : i64 = 1 << 29; // Marker as an ice giant.
     const NATURAL_CIV : i64 = 1 << 30; // ALIENS YOU CAN TALK TO! ... Or not. :p
+    const SATELITTE : i64 = 1 << 31;
 
     // Aggregates
     const MERCURY_LIKE : i64 = World::RAW_MATERIALS | World::EXTREME_COLD | World::EXTREME_HEAT | World::NO_ATMOSPHERE | World::TIDALLY_LOCKED;    
     const VENUS_LIKE : i64 = World::RAW_MATERIALS | World::ACIDIC | World::HIGH_PRESSURE_ATMOSPHERE | World::EARTH_GRAVITY | World::EXTREME_HEAT | World::INSIDE_HABITABLE_ZONE;
-    const EARTH_LIKE : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::NATURAL_ANIMAL_BIOLOGY | World::EARTH_GRAVITY | World::TOLDERABLE_DISASTERS | World::HYDROGEN | World::INSIDE_HABITABLE_ZONE | World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
+    const EARTH_LIKE : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::NATURAL_ANIMAL_BIOLOGY | World::EARTH_GRAVITY | World::TOLERABLE_DISASTERS | World::HYDROGEN | World::INSIDE_HABITABLE_ZONE | World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
     const CURRENT_EARTH : i64 = World::EARTH_LIKE | World::NUCLEAR_WINTER | World::TOXIC_ATMOSPHERE;
     const MARS_LIKE : i64 = World::INSIDE_HABITABLE_ZONE | World::EXTREME_COLD | World::NATURAL_SATELLITES | World::MINIMAL_ATMOSPHERE | World::RAW_MATERIALS | World::MAGNETIC_FIELD;
     const JUPITER_LIKE : i64 = World::HIGH_GRAVITY | World::MAGNETIC_FIELD | World::HYDROGEN | World::NATURAL_SATELLITES | World::TOXIC_ATMOSPHERE;
@@ -298,7 +300,7 @@ impl World{
 
     const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::TOXIC_ATMOSPHERE | World::HYDROGEN | World::MAGNETIC_FIELD | World::NATURAL_SATELLITES | World::RINGS | World::ICE_MANTLE; // Neptune and Uranus, differentiated by cold.
 
-    const BIOLOGICAL_GAS_GIANT : i64 = World::INSIDE_HABITABLE_ZONE | World::OXYGENATION | World::HIGH_GRAVITY | World::HYDROGEN | World::HIGH_PRESSURE_ATMOSPHERE | World::NATURAL_ANIMAL_BIOLOGY | World::TOLDERABLE_DISASTERS | World::NATURAL_SATELLITES;
+    const BIOLOGICAL_GAS_GIANT : i64 = World::INSIDE_HABITABLE_ZONE | World::OXYGENATION | World::HIGH_GRAVITY | World::HYDROGEN | World::HIGH_PRESSURE_ATMOSPHERE | World::NATURAL_ANIMAL_BIOLOGY | World::TOLERABLE_DISASTERS | World::NATURAL_SATELLITES;
 
 
     pub fn build_world (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i64) -> World {
@@ -311,6 +313,8 @@ struct StarmapLocation {
     x : f32,
     y : f32
 }
+
+static mut TEST_COUNT : i32 = 0;
 
 impl StarmapLocation{
     fn build_starmap_location(x : f32, y : f32) -> StarmapLocation{
@@ -385,11 +389,8 @@ impl System {
         let mut worlds : Vec<World> = Vec::new();
         worlds = star_calcs::StarCalc::generate_random_gas_giants(star_calcs::StarCalc::get_gas_giant_mass(planet_mass), worlds);
         worlds = star_calcs::StarCalc::generate_random_ice_giants(star_calcs::StarCalc::get_ice_giant_mass(planet_mass), worlds);
-        worlds = star_calcs::StarCalc::generate_random_rocky_planets(star_calcs::StarCalc::get_rocky_mass(planet_mass));
-        let rocky_mass : f64 = star_calcs::StarCalc::get_rocky_mass(planet_mass);
-        let minor_mass : f64 = star_calcs::StarCalc::get_minor_mass(planet_mass);
-
-        
+        worlds = star_calcs::StarCalc::generate_random_rocky_planets(star_calcs::StarCalc::get_rocky_mass(planet_mass), worlds);
+        worlds = star_calcs::StarCalc::generate_random_minor_planets(star_calcs::StarCalc::get_minor_mass(planet_mass), worlds);        
 
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
@@ -404,8 +405,36 @@ impl System {
         }
 
         
-        System::build_system(String::from("Test"), location, 10000000, star_type, Vec::new(), system_mass, police_presence, pirate_presence)
+        System::build_system(String::from("Test"), location, 10000000, star_type, worlds, system_mass, police_presence, pirate_presence)
     }
+
+    // make sure everything is as it should be.
+    fn process_random_system(&mut self){
+        
+        // unsafe static, just for testing.
+        unsafe{
+            TEST_COUNT += 1;
+        
+
+        for world in &self.worlds{
+            let ice_giant : bool = world.supports & World::ICE_MANTLE > 0;
+            let gas_giant : bool = world.supports & World::JUPITER_LIKE > 0;
+            let rock_world : bool = !ice_giant || !gas_giant;
+
+            if TEST_COUNT < 10{
+                if rock_world {
+                    println!("Rock World: Name {}, Mass {}, {}", world.name, world.mass, world.supports);
+                } else  if gas_giant {
+                    println!("Gas Giant: Name {}, Mass {}, {}", world.name, world.mass, world.supports);
+                } else if ice_giant {
+                    println!("Ice Giant: Name {}, Mass {}, {}", world.name, world.mass, world.supports);
+                }
+            }
+        }
+
+        }
+    }
+
 }
 
 // Every time we need the gameplay state to make a decision in a new way, this struct needs to change to encorporate that type of task, using a new task of its own.
@@ -450,7 +479,9 @@ pub struct GameplayState{
 
 impl GameplayState {
     fn add_random_system(&mut self) {
-        self.systems.push(System::build_random_system(self))
+        let mut new_system = System::build_random_system(self);
+        new_system.process_random_system();
+        self.systems.push(new_system);
     }
 
     fn count_star_type(&self, type_ : i64) -> i32{

@@ -1,7 +1,6 @@
 #![allow(dead_code)] // until more of this is written.
 
 use rand::Rng;
-
 use super::World;
 
 pub struct StarCalc {
@@ -63,10 +62,11 @@ impl StarCalc {
     const MASS_OF_GAS_GIANTS_RATIO : f64 = 1.0 - StarCalc::MASS_OF_MINOR_BODIES_RATIO - StarCalc::MASS_OF_TERRESTRIAL_PLANETS_RATIO - StarCalc::MASS_OF_ICE_GIANTS_RATIO;
 
     // in earth masses
-    const MIN_GAS_GIANT : f64 = 3.0; // These are based on research
-    const MAX_GAS_GIANT : f64 = 3180.0; // These are based on research
-    const MIN_ICE_GIANT : f64 = 1.5; // These are kind of arbitrary limits based on my intuition.
-    const MAX_ICE_GIANT : f64 = 7.0; // These are kind of arbitrary limits based on my intuition.
+    const MIN_GAS_GIANT : f64 = 3.0; // These are based on quick research
+    const MAX_GAS_GIANT : f64 = 3180.0; // These are based on quick research
+    const MIN_ICE_GIANT : f64 = 5.0; // These are kind of arbitrary limits based on my intuition.
+    const MAX_ICE_GIANT : f64 = 30.0; // These are kind of arbitrary limits based on my intuition.
+    const MAX_SUPER_EARTH : f64 = 10.0; // Biggest super earth found so far is about this size.
 
     pub fn new_random_star_type() -> i64 {
         let mut star_type : i64 = StarTypes::BH as i64;
@@ -176,7 +176,7 @@ impl StarCalc {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
         while (planets as f64) < max_planets {
-            let mass_rand : f64 = rng.gen_range(StarCalc::MIN_GAS_GIANT..StarCalc::MAX_GAS_GIANT);
+            let mass_rand: f64 = f64::powf(rng.gen_range(1.0..2.0), 11.6348110502) + StarCalc::MIN_GAS_GIANT - 1.0;
             remaining_mass -= mass_rand;
             
             let type_rand : f64 = rng.gen();
@@ -216,7 +216,7 @@ impl StarCalc {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
         while (planets as f64) < max_planets {
-            let mass_rand: f64 = rng.gen_range(StarCalc::MIN_ICE_GIANT..StarCalc::MAX_ICE_GIANT);
+            let mass_rand: f64 = f64::powf(rng.gen_range(1.0..2.0), 4.6438561898) + StarCalc::MIN_ICE_GIANT - 1.0;
             remaining_mass -= mass_rand;
             
             worlds.push(World::build_world(String::from("TEST ICE GIANT"), mass_rand, Vec::new(), 0, World::ICE_GIANT));
@@ -232,15 +232,31 @@ impl StarCalc {
         worlds
     }
     
-    pub fn generate_random_rocky_planets(planet_mass : f64, mut worlds : Vec<World>) -> Vec<World> {
-    
+    pub fn generate_random_rocky_planets(planet_mass : f64,  worlds : Vec<World>) -> Vec<World> {
+        let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
+        let num_worlds : i32 = rng.gen_range(0 .. 7);
+        let mut remaining_mass = planet_mass;
+
+        let mut x : i32 = 0;
+        while x < num_worlds && remaining_mass > 0.0 {
+            // this circumvents having to write a long match statement, since this gives a max of 10, the largest known super earth 
+            let mut mass : f64 = f64::powf(0.5 + rng.gen::<f64>(), 5.6788735873);
+
+            if mass >  StarCalc::MAX_SUPER_EARTH {
+                mass = StarCalc::MAX_SUPER_EARTH;
+            }
+
+
+            remaining_mass -= mass;
+            x += 1;
+        }
 
         worlds
     }
 
     pub fn generate_random_minor_planets(planet_mass : f64, mut worlds : Vec<World>) -> Vec<World> {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
-        let num_worlds : i32 = rng.gen_range(8 .. 22);         
+        let num_worlds : i32 = rng.gen_range(10 .. 40);         
 
         worlds
     }
