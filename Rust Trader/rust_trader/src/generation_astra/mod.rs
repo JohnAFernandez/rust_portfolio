@@ -298,6 +298,7 @@ impl World{
     // Aggregates
     const MERCURY_LIKE : i64 = World::RAW_MATERIALS | World::EXTREME_COLD | World::EXTREME_HEAT | World::NO_ATMOSPHERE | World::TIDALLY_LOCKED;    
     const VENUS_LIKE : i64 = World::RAW_MATERIALS | World::ACIDIC | World::HIGH_PRESSURE_ATMOSPHERE | World::EARTH_GRAVITY | World::EXTREME_HEAT | World::INSIDE_HABITABLE_ZONE;
+    const EARTH_LIKE2 : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::EARTH_GRAVITY | World::TOLERABLE_DISASTERS | World::HYDROGEN |World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
     const EARTH_LIKE : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::EARTH_GRAVITY | World::TOLERABLE_DISASTERS | World::HYDROGEN | World::INSIDE_HABITABLE_ZONE | World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
     const CURRENT_EARTH : i64 = World::EARTH_LIKE | World::NUCLEAR_WINTER | World::TOXIC_ATMOSPHERE;
     const MARS_LIKE : i64 = World::INSIDE_HABITABLE_ZONE | World::EXTREME_COLD | World::NATURAL_SATELLITES | World::MINIMAL_ATMOSPHERE | World::RAW_MATERIALS | World::MAGNETIC_FIELD;
@@ -312,7 +313,7 @@ impl World{
         World{ name, mass, industries, population, supports}
     }    
 
-    pub fn print_flags (flags : i64){
+    pub fn print_flags (flags : i64) -> String{
         //let mut found = false;
         //if flags & World::EARTH_LIKE == World::EARTH_LIKE { found = true }
         //if flags & World::MARS_LIKE == World::MARS_LIKE { found = true }
@@ -324,13 +325,13 @@ impl World{
 
         let mut count = 0;
         let mut output : String = "".to_string();
-        if flags & World::OXYGENATION > 0 { output += "Natural Oxygen Present, "; count += 1}
-        if flags & World::WATER_CYCLE > 0 { output += "Water Cycle Present, "; count += 1}
-        if flags & World::RAW_MATERIALS > 0 { output += "Raw Materials Present, "; count += 1}
-        if flags & World::NATURAL_SOIL > 0 { output += "Natural Soil Present, "; count += 1}
-        if flags & World::EARTH_GRAVITY > 0 { output += "Tolerable Gravity Present, "; count += 1}
-        if flags & World::TOLERABLE_DISASTERS > 0 { output += "Tolerable Disasters Present, "; count += 1}
-        if flags & World::HYDROGEN > 0 { output += "Hydrogen Present, "; count += 1}
+        if flags & World::OXYGENATION > 0 { output += "Natural Oxygen Present,"; count += 1}
+        if flags & World::WATER_CYCLE > 0 { output += "Water Cycle Present,"; count += 1}
+        if flags & World::RAW_MATERIALS > 0 { output += "Raw Materials Present,"; count += 1}
+        if flags & World::NATURAL_SOIL > 0 { output += "Natural Soil Present,"; count += 1}
+        if flags & World::EARTH_GRAVITY > 0 { output += "Tolerable Gravity Present,"; count += 1}
+        if flags & World::TOLERABLE_DISASTERS > 0 { output += "Tolerable Disasters Present,"; count += 1}
+        if flags & World::HYDROGEN > 0 { output += "Hydrogen Present,"; count += 1}
         if flags & World::INSIDE_HABITABLE_ZONE > 0 { output += "Inside Habitable Zone, "; count += 1}
         if flags & World::MAGNETIC_FIELD > 0 { output += "Magnetic Field Present, "; count += 1}
         if flags & World::TOXIC_ATMOSPHERE > 0 { output += "Toxic Atmosphere Present, ";}
@@ -357,15 +358,57 @@ impl World{
         if flags & World::NATURAL_PLANTS > 0 { output += "Has Natural Plants, ";}
         if flags & World::NATURAL_ANIMAL_BIOLOGY > 0 { output += "Has Natural Animals, ";}
         if flags & World::NATURAL_CIV > 0 { output += "Has a civilzation!, ";}
-        if flags & World::EARTH_LIKE == World::EARTH_LIKE { output += "Actually looks like Earth! "}
-        if flags & World::MARS_LIKE == World::MARS_LIKE { output += "Actually looks like Mars! "}
-        if flags & World::VENUS_LIKE == World::VENUS_LIKE { output += "Actually looks like Venus! "}
-        if flags & World::MERCURY_LIKE == World::MERCURY_LIKE { output += "Actually looks like Mercury! "}
-        if flags & World::JUPITER_LIKE == World::JUPITER_LIKE { output += "Actually looks like Jupiter! "}
-        if flags & World::SATURN_LIKE == World::SATURN_LIKE { output += "Actually looks like Saturn! "}
-        if flags & World::ICE_GIANT == World::ICE_GIANT { output += "Actually looks like Uranus or Neptune! "}
+        if flags & World::EARTH_LIKE == World::EARTH_LIKE { output += "Actually looks like Earth!,"}
+        if flags & World::MARS_LIKE == World::MARS_LIKE { output += "Actually looks like Mars!,"}
+        if flags & World::VENUS_LIKE == World::VENUS_LIKE { output += "Actually looks like Venus!,"}
+        if flags & World::MERCURY_LIKE == World::MERCURY_LIKE { output += "Actually looks like Mercury!,"}
+        if flags & World::JUPITER_LIKE == World::JUPITER_LIKE { output += "Actually looks like Jupiter!,"}
+        if flags & World::SATURN_LIKE == World::SATURN_LIKE { output += "Actually looks like Saturn!,"}
+        if flags & World::ICE_GIANT == World::ICE_GIANT { output += "Actually looks like Uranus or Neptune!,"}
 
-        println!("{}", output);
+        output
+    }
+
+    fn print_flags2(flags : i64) -> String {
+        
+        let mut output : String = "".to_string();
+        if flags & World::OXYGENATION > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::WATER_CYCLE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::RAW_MATERIALS > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NATURAL_SOIL > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::EARTH_GRAVITY > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::TOLERABLE_DISASTERS > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::HYDROGEN > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::INSIDE_HABITABLE_ZONE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::MAGNETIC_FIELD > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::TOXIC_ATMOSPHERE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::TOXIC_OCEANS > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NO_ATMOSPHERE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::MINIMAL_ATMOSPHERE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::TIDALLY_LOCKED > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::HIGH_PRESSURE_ATMOSPHERE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::EXTREME_HEAT > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::EXTREME_COLD > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::SPHEROID > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NUCLEAR_WINTER > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::ACIDIC > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::ALKALINE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::HIGH_GRAVITY > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::HIGH_VOLCANISM > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::RINGS > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::OCEANS > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::TECTONICALLY_ACTIVE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NATURAL_SATELLITES > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::ICE_MANTLE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::SATELITTE > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NATURAL_MICROBES > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NATURAL_PLANTS > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NATURAL_ANIMAL_BIOLOGY > 0 { output += "true,";} else { output += "false,";}
+        if flags & World::NATURAL_CIV > 0 { output += "true,";} else { output += "false,";}
+
+        if flags & World::EARTH_LIKE2 == World::EARTH_LIKE2 { output += "Actually looks like Earth!,"; println!("GOT AN EARTH LIKE!")}
+
+        output
     }
 }
 
@@ -600,14 +643,22 @@ impl GameplayState {
             }
         }
 
-        let mut output_string : String = "".to_string();
+        let mut output_string : String = "id,,,,,,,,,,,,,,,,,,,,,\n".to_string();
 
         for count in planet_type_count{
-            output_string += ToString(count.1);
-            output_string += " entries found for this flagset:".to_string();
-            World::print_flags(count.0);
+            output_string += &count.1.to_string();
+            output_string += ",";
+            output_string += &World::print_flags2(count.0);
+            output_string += "\n";
         }
         
+        let file_create = File::create("test_output.txt");
+        let mut file = match file_create {
+            Ok(file) => file,
+            Err(error) => panic!("Problem creating the file: {:?}", error)
+        };
+
+        file.write(output_string.as_bytes());
 
         state
     

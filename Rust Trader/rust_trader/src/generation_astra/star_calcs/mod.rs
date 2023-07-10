@@ -268,7 +268,7 @@ impl StarCalc {
             }
 
             // will this planet have a magnetic field
-            if rng.gen::<f32>() < 0.25 {
+            if rng.gen::<f32>() < 0.40 {
                 planet_flags |= World::MAGNETIC_FIELD;
                 planet_flags |= World::TECTONICALLY_ACTIVE;
             }
@@ -367,8 +367,6 @@ impl StarCalc {
             }
 
             remaining_mass -= rand_mass;
-
-            World::print_flags(planet_flags);
 
             worlds.push(World::build_world(String::from("TEST Terrestrial"), rand_mass, Vec::new(), 0, planet_flags));
 
