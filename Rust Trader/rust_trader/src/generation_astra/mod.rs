@@ -1,13 +1,13 @@
 #![allow(dead_code)] // until more of this is written.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 //use std::isize;
 //use std::ops;
 //use std::num;
 use rand::Rng;
 
-use self::star_calcs::StarCalc;
-//use sqlite;
+use std::fs::File;
+use std::io::prelude::*;
 
 mod star_calcs;
 
@@ -259,12 +259,11 @@ impl World{
     const WATER_CYCLE : i64 = 1 << 1;        
     const RAW_MATERIALS : i64 = 1 << 2;       // False means, Gas Giant, or Iceball
     const NATURAL_SOIL : i64 = 1 << 3;           // False means no carbon, but it essentially means that to do farming, soil does not need to be imported.
-    const NATURAL_ANIMAL_BIOLOGY : i64 = 1 << 4;     
-    const EARTH_GRAVITY : i64 = 1 << 5;
-    const TOLERABLE_DISASTERS : i64 = 1 << 6;
-    const HYDROGEN : i64 = 1 << 7;
-    const INSIDE_HABITABLE_ZONE : i64 = 1 << 8;
-    const MAGNETIC_FIELD : i64 = 1 << 9;    // this is a prerequisite for life.
+    const EARTH_GRAVITY : i64 = 1 << 4;
+    const TOLERABLE_DISASTERS : i64 = 1 << 5;
+    const HYDROGEN : i64 = 1 << 6;
+    const INSIDE_HABITABLE_ZONE : i64 = 1 << 7;
+    const MAGNETIC_FIELD : i64 = 1 << 8;    // this is a prerequisite for life.
 
     // Bad stuff
     const TOXIC_ATMOSPHERE : i64 = 1 << 11;
@@ -288,26 +287,86 @@ impl World{
     const TECTONICALLY_ACTIVE : i64 = 1 << 27;
     const NATURAL_SATELLITES : i64 = 1 << 28;
     const ICE_MANTLE : i64 = 1 << 29; // Marker as an ice giant.
-    const NATURAL_CIV : i64 = 1 << 30; // ALIENS YOU CAN TALK TO! ... Or not. :p
     const SATELITTE : i64 = 1 << 31;
+    const NATURAL_MICROBES : i64 = 1 << 32;
+    const NATURAL_PLANTS : i64 = 1 << 33;
+    const NATURAL_ANIMAL_BIOLOGY : i64 = 1 << 34;     
+    const NATURAL_CIV : i64 = 1 << 31; // ALIENS YOU CAN TALK TO! ... Or not. :p
+    const IMPACT_OBJECT : i64 = 1 << 32; // Minor worlds are sometimes composites of other objects and have wonky shapes.  This is very common for small moons of giant planets, asteroids, and kupier belt objects.
+
 
     // Aggregates
     const MERCURY_LIKE : i64 = World::RAW_MATERIALS | World::EXTREME_COLD | World::EXTREME_HEAT | World::NO_ATMOSPHERE | World::TIDALLY_LOCKED;    
     const VENUS_LIKE : i64 = World::RAW_MATERIALS | World::ACIDIC | World::HIGH_PRESSURE_ATMOSPHERE | World::EARTH_GRAVITY | World::EXTREME_HEAT | World::INSIDE_HABITABLE_ZONE;
-    const EARTH_LIKE : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::NATURAL_ANIMAL_BIOLOGY | World::EARTH_GRAVITY | World::TOLERABLE_DISASTERS | World::HYDROGEN | World::INSIDE_HABITABLE_ZONE | World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
+    const EARTH_LIKE : i64 = World::OXYGENATION | World::WATER_CYCLE | World::RAW_MATERIALS | World::NATURAL_SOIL | World::EARTH_GRAVITY | World::TOLERABLE_DISASTERS | World::HYDROGEN | World::INSIDE_HABITABLE_ZONE | World::MAGNETIC_FIELD | World::OCEANS | World::TECTONICALLY_ACTIVE | World::NATURAL_SATELLITES;
     const CURRENT_EARTH : i64 = World::EARTH_LIKE | World::NUCLEAR_WINTER | World::TOXIC_ATMOSPHERE;
     const MARS_LIKE : i64 = World::INSIDE_HABITABLE_ZONE | World::EXTREME_COLD | World::NATURAL_SATELLITES | World::MINIMAL_ATMOSPHERE | World::RAW_MATERIALS | World::MAGNETIC_FIELD;
-    const JUPITER_LIKE : i64 = World::HIGH_GRAVITY | World::MAGNETIC_FIELD | World::HYDROGEN | World::NATURAL_SATELLITES | World::TOXIC_ATMOSPHERE;
+    const JUPITER_LIKE : i64 = World::HIGH_GRAVITY | World::MAGNETIC_FIELD | World::HYDROGEN | World::NATURAL_SATELLITES | World::TOXIC_ATMOSPHERE | World::HIGH_PRESSURE_ATMOSPHERE;
     const SATURN_LIKE : i64 = World::JUPITER_LIKE | World::RINGS;
 
     const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::TOXIC_ATMOSPHERE | World::HYDROGEN | World::MAGNETIC_FIELD | World::NATURAL_SATELLITES | World::RINGS | World::ICE_MANTLE; // Neptune and Uranus, differentiated by cold.
 
     const BIOLOGICAL_GAS_GIANT : i64 = World::INSIDE_HABITABLE_ZONE | World::OXYGENATION | World::HIGH_GRAVITY | World::HYDROGEN | World::HIGH_PRESSURE_ATMOSPHERE | World::NATURAL_ANIMAL_BIOLOGY | World::TOLERABLE_DISASTERS | World::NATURAL_SATELLITES;
 
-
     pub fn build_world (name : String, mass : f64, industries : Vec<Industry>, population : i128, supports : i64) -> World {
         World{ name, mass, industries, population, supports}
     }    
+
+    pub fn print_flags (flags : i64){
+        //let mut found = false;
+        //if flags & World::EARTH_LIKE == World::EARTH_LIKE { found = true }
+        //if flags & World::MARS_LIKE == World::MARS_LIKE { found = true }
+        //if flags & World::VENUS_LIKE == World::VENUS_LIKE { found = true }
+        //if flags & World::MERCURY_LIKE == World::MERCURY_LIKE { found = true }
+        //if flags & World::JUPITER_LIKE == World::JUPITER_LIKE { found = true }
+        //if flags & World::SATURN_LIKE == World::SATURN_LIKE { found = true }
+        //if flags & World::ICE_GIANT == World::ICE_GIANT { found = true }
+
+        let mut count = 0;
+        let mut output : String = "".to_string();
+        if flags & World::OXYGENATION > 0 { output += "Natural Oxygen Present, "; count += 1}
+        if flags & World::WATER_CYCLE > 0 { output += "Water Cycle Present, "; count += 1}
+        if flags & World::RAW_MATERIALS > 0 { output += "Raw Materials Present, "; count += 1}
+        if flags & World::NATURAL_SOIL > 0 { output += "Natural Soil Present, "; count += 1}
+        if flags & World::EARTH_GRAVITY > 0 { output += "Tolerable Gravity Present, "; count += 1}
+        if flags & World::TOLERABLE_DISASTERS > 0 { output += "Tolerable Disasters Present, "; count += 1}
+        if flags & World::HYDROGEN > 0 { output += "Hydrogen Present, "; count += 1}
+        if flags & World::INSIDE_HABITABLE_ZONE > 0 { output += "Inside Habitable Zone, "; count += 1}
+        if flags & World::MAGNETIC_FIELD > 0 { output += "Magnetic Field Present, "; count += 1}
+        if flags & World::TOXIC_ATMOSPHERE > 0 { output += "Toxic Atmosphere Present, ";}
+        if flags & World::TOXIC_OCEANS > 0 { output += "Toxic Oceans Present, ";}
+        if flags & World::NO_ATMOSPHERE > 0 { output += "No Atmosphere, ";}
+        if flags & World::MINIMAL_ATMOSPHERE > 0 { output += "Minimal Atmoshpere, ";}
+        if flags & World::TIDALLY_LOCKED > 0 { output += "Tidally Locked, ";}
+        if flags & World::HIGH_PRESSURE_ATMOSPHERE > 0 { output += "High Pressure Atmosphere, ";}
+        if flags & World::EXTREME_HEAT > 0 { output += "Extreme Heat, ";}
+        if flags & World::EXTREME_COLD > 0 { output += "Extreme Cold, ";}
+        if flags & World::SPHEROID > 0 { output += "Spheroid, ";}
+        if flags & World::NUCLEAR_WINTER > 0 { output += "Nuclear Winter, ";}
+        if flags & World::ACIDIC > 0 { output += "Acidic Atmosphere, ";}
+        if flags & World::ALKALINE > 0 { output += "Alkaline Atmosphere, ";}
+        if flags & World::HIGH_GRAVITY > 0 { output += "High Gravity Planet, ";}
+        if flags & World::HIGH_VOLCANISM > 0 { output += "High Volcanism Planet, ";}
+        if flags & World::RINGS > 0 { output += "Ringed Planet, ";}
+        if flags & World::OCEANS > 0 { output += "Oceans Present, "; count += 1}
+        if flags & World::TECTONICALLY_ACTIVE > 0 { output += "Tectonically Active Planet, "; count += 1}
+        if flags & World::NATURAL_SATELLITES > 0 { output += "Has moons, "; count += 1}
+        if flags & World::ICE_MANTLE > 0 { output += "Ice Mantle (Ice Giant), ";}
+        if flags & World::SATELITTE > 0 { output += "Is a satellite of another object, ";}
+        if flags & World::NATURAL_MICROBES > 0 { output += "Has Natural Microbes, ";}
+        if flags & World::NATURAL_PLANTS > 0 { output += "Has Natural Plants, ";}
+        if flags & World::NATURAL_ANIMAL_BIOLOGY > 0 { output += "Has Natural Animals, ";}
+        if flags & World::NATURAL_CIV > 0 { output += "Has a civilzation!, ";}
+        if flags & World::EARTH_LIKE == World::EARTH_LIKE { output += "Actually looks like Earth! "}
+        if flags & World::MARS_LIKE == World::MARS_LIKE { output += "Actually looks like Mars! "}
+        if flags & World::VENUS_LIKE == World::VENUS_LIKE { output += "Actually looks like Venus! "}
+        if flags & World::MERCURY_LIKE == World::MERCURY_LIKE { output += "Actually looks like Mercury! "}
+        if flags & World::JUPITER_LIKE == World::JUPITER_LIKE { output += "Actually looks like Jupiter! "}
+        if flags & World::SATURN_LIKE == World::SATURN_LIKE { output += "Actually looks like Saturn! "}
+        if flags & World::ICE_GIANT == World::ICE_GIANT { output += "Actually looks like Uranus or Neptune! "}
+
+        println!("{}", output);
+    }
 }
 
 
@@ -525,10 +584,29 @@ impl GameplayState {
 
         state.systems.push(sol_system);
 
-        while state.systems.len() < 1000{
+        while state.systems.len() < 10000{
             state.add_random_system();
         }
         
+        let mut planet_type_count : HashMap<i64, i32> = HashMap::new();
+
+        for system in &state.systems{
+            for planet in &system.worlds{
+                if planet_type_count.contains_key(&planet.supports){
+                    *planet_type_count.get_mut(&planet.supports).unwrap() += 1;                
+                } else {
+                    planet_type_count.insert(planet.supports, 1);
+                }
+            }
+        }
+
+        let mut output_string : String = "".to_string();
+
+        for count in planet_type_count{
+            output_string += ToString(count.1);
+            output_string += " entries found for this flagset:".to_string();
+            World::print_flags(count.0);
+        }
         
 
         state

@@ -248,8 +248,8 @@ impl StarCalc {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
         let num_worlds : i32 = rng.gen_range(0 .. 7);
         let mut remaining_mass = planet_mass;
-
         let mut x : i32 = 0;
+
         while x < num_worlds && remaining_mass > 0.0 {
             // this circumvents having to write a long match statement, since this gives a max of 10, the largest known super earth 
             let mut rand_mass : f64 = f64::powf(0.5 + rng.gen::<f64>(), 5.6788735873) * StarCalc::MASS_OF_EARTH;
@@ -258,15 +258,123 @@ impl StarCalc {
                 rand_mass = StarCalc::MAX_SUPER_EARTH_MASS;
             }
 
-            // TODO! Not everything can be like earth, start making random flags, and calc the habitable range
+            let mut planet_flags : i64 = World::RAW_MATERIALS | World::NATURAL_SOIL;
 
-            remaining_mass -= rand_mass;
-            worlds.push(World::build_world(String::from("TEST Earth Like"), rand_mass, Vec::new(), 0, World::EARTH_LIKE));
-
-            if rand_mass < StarCalc::MAX_SUPER_EARTH_MASS{
-                break;
+            // Does this have earth like gravity?
+            if rand_mass > (0.6 * StarCalc::MASS_OF_EARTH) && rand_mass < (1.2 * StarCalc::MASS_OF_EARTH) {
+                planet_flags |= World::EARTH_GRAVITY;
+            } else if rand_mass > (1.2 * StarCalc::MASS_OF_EARTH) {
+                planet_flags |= World::HIGH_GRAVITY;
             }
 
+            // will this planet have a magnetic field
+            if rng.gen::<f32>() < 0.25 {
+                planet_flags |= World::MAGNETIC_FIELD;
+                planet_flags |= World::TECTONICALLY_ACTIVE;
+            }
+
+            // when gravity is low enough, it cannot maintain its atmosphere
+            // No I didn't research this number
+            if rand_mass < (0.2 * StarCalc::MASS_OF_EARTH) {
+                planet_flags |= World::NO_ATMOSPHERE;
+            } else {
+                // we need to determine what type of atmosphere we have here
+
+                // low mass means alsmost no atmosphere (think mars)
+                if rand_mass < (0.5 * StarCalc::MASS_OF_EARTH){                    
+                    planet_flags |= World::MINIMAL_ATMOSPHERE;
+
+                // but if we're not too small, we might have ended up with a Venus by chance    
+                } else if rng.gen::<f32>() < 0.1 {
+                    planet_flags |= World::HIGH_PRESSURE_ATMOSPHERE;
+                }
+
+                // worlds with a magnetic field will not have their hydrogen sheered off by solar wind and stuff
+                if planet_flags & World::MAGNETIC_FIELD != 0{
+                    planet_flags |= World::HYDROGEN;
+                }
+
+
+                // It may have a toxic atmosphere, most worlds do
+                if rng.gen::<f32>() < 0.66{
+                    planet_flags |= World::TOXIC_ATMOSPHERE;
+                    
+
+                    if rng.gen::<f32>() < 0.95 {
+                        planet_flags |= World::ACIDIC;
+                    } else {
+                        planet_flags |= World::ALKALINE;
+                    }
+
+
+                } else {
+                    planet_flags |= World::OXYGENATION;
+                }
+
+            }
+
+            // does this world have oceans? (No atmosphere means subsurface ocean)
+            if rng.gen::<f32>() < 0.1 {
+                planet_flags |= World::OCEANS;
+                
+                // If there's an atmosphere and an ocean, there's a water cycle.
+                if planet_flags & World::NO_ATMOSPHERE == 0 {
+                    planet_flags |= World::WATER_CYCLE;
+                }
+
+                // rare effect where the oceans are toxic to our biology
+                if rng.gen::<f32>() < 0.01 {
+                    planet_flags |= World::TOXIC_OCEANS;
+                }
+            }
+
+            if rng.gen::<f32>() < 0.05 {
+                planet_flags |= World::HIGH_VOLCANISM;
+            }
+
+            // Do we have reasonable disasters?  
+            if planet_flags & (World::HIGH_VOLCANISM | World::MINIMAL_ATMOSPHERE | World::NO_ATMOSPHERE) == 0{
+                planet_flags |= World::TOLERABLE_DISASTERS;
+            }
+
+            // most planets have moons, at least in the solar system.  Even mars does.
+            if rng.gen::<f32>() > 0.2 {
+                planet_flags |= World::NATURAL_SATELLITES;
+            
+            }
+
+            if rng.gen::<f32>() < 0.1 {
+                planet_flags |= World::RINGS;
+            }
+
+            // yes, I know "LIFE CAN BE SO DIFFERENT THAN US", ok but this is probably the easiest way for life to emerge.
+            if planet_flags & World::HYDROGEN != 0 && planet_flags & World::WATER_CYCLE != 0 {
+                if rng.gen::<f32>() < 0.25{
+                    planet_flags |= World::NATURAL_MICROBES;
+                    
+                    if rng.gen::<f32>() < 0.15 {
+                        planet_flags |= World::NATURAL_PLANTS;
+
+                        if rng.gen::<f32>() < 0.10 {
+                            planet_flags |= World::NATURAL_ANIMAL_BIOLOGY;
+
+                            if rng.gen::<f32>() < 0.05 {
+                                planet_flags |= World::NATURAL_CIV;
+                            }
+                        }
+                    }
+                } 
+            }
+
+            remaining_mass -= rand_mass;
+
+            World::print_flags(planet_flags);
+
+            worlds.push(World::build_world(String::from("TEST Terrestrial"), rand_mass, Vec::new(), 0, planet_flags));
+
+            if rand_mass < 0.1 * StarCalc::MASS_OF_EARTH{
+                break;
+            }
 
             x += 1;
         }
@@ -285,7 +393,6 @@ impl StarCalc {
     pub fn habitable_range(star_type : i64) -> (f32,f32) {
 
         let conversion_value: f32; 
-        let absolute_brightness: f32 = 0.0;
         let max_magnitude: f32;
         let min_magnitude: f32;
 
@@ -314,7 +421,8 @@ impl StarCalc {
         }
 
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
-        let rand_mag = rng.gen_range(max_magnitude..min_magnitude);
+
+        let rand_mag : f32 = if max_magnitude == min_magnitude { 20.0 } else { rng.gen_range(max_magnitude..min_magnitude) };
 
         // forumla is Absolute Magnitude (rand_mag) - table value - 4.72, divided by -2.5
         // raise 10 to that value.  Then the inner is done by dividng that by 1.1 and then

@@ -1,9 +1,9 @@
 #![allow(dead_code)] // until more of this is written.
 
-mod dark_void;
+mod generation_astra;
 
-fn start_game() -> dark_void::GameplayState {
-    let mut _state: dark_void::GameplayState = dark_void::GameplayState::build_gameplay_state(String::from("Test Player Name"), dark_void::DifficultyLevel::Easy);
+fn start_game() -> generation_astra::GameplayState {
+    let mut _state: generation_astra::GameplayState = generation_astra::GameplayState::build_gameplay_state(String::from("Test Player Name"), generation_astra::DifficultyLevel::Easy);
 
 //    println!("Showing generated systems.");
 
