@@ -491,7 +491,7 @@ impl System {
         let system_mass : f64 = star_calcs::StarCalc::get_random_system_mass(star_type);
         let planet_mass : f64 = star_calcs::StarCalc::get_planet_mass(system_mass);
         
-        let habitable_range= star_calcs::StarCalc::habitable_range(star_type);
+        let habitable_range = star_calcs::StarCalc::habitable_range(star_type);
 
         let mut worlds : Vec<World> = Vec::new();
         worlds = star_calcs::StarCalc::generate_random_gas_giants(star_calcs::StarCalc::get_gas_giant_mass(planet_mass), worlds);
