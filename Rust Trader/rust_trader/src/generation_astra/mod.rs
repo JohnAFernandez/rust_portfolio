@@ -244,6 +244,17 @@ impl Orbit {
    
 }
 
+pub struct AsteroidBelt {
+    mass : f64,
+    orbit: Orbit
+}
+
+impl AsteroidBelt {
+    pun fn build_asteroid_belt(mass : f64, orbit: Orbit) -> AsteroidBelt {
+        AsteroidBelt {mass, Orbit}
+    }
+    
+
 pub struct World {
     name : String,
     mass : f64,
@@ -473,6 +484,7 @@ struct System {
     star_type : i64,
     habitable_zone : (f32, f32),
     worlds : Vec<World>,
+    asteroid_belts : Vec<AsteroidBelt>,
     space_materials : f64,
     police_presence : f32,
     pirate_presence : f32
@@ -499,10 +511,13 @@ impl System {
         worlds = star_calcs::StarCalc::generate_random_gas_giants(star_calcs::StarCalc::get_gas_giant_mass(planet_mass), worlds);
         worlds = star_calcs::StarCalc::generate_random_ice_giants(star_calcs::StarCalc::get_ice_giant_mass(planet_mass), worlds);
         worlds = star_calcs::StarCalc::generate_random_rocky_planets(star_calcs::StarCalc::get_rocky_mass(planet_mass), worlds);
-        worlds = star_calcs::StarCalc::generate_random_minor_planets(star_calcs::StarCalc::get_minor_mass(planet_mass), worlds);        
+        worlds = star_calcs::StarCalc::generate_random_minor_planets(star_calcs::StarCalc::get_minor_mass(planet_mass), worlds); 
 
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
+
+        let asteroid_belts = rng.gen_range(0..3);
+        
         let pirate_presence : f32;
         let police_presence : f32;
 
