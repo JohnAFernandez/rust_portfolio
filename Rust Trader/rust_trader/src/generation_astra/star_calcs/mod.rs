@@ -74,7 +74,7 @@ impl StarCalc {
 
     // this is all based on the solar system.  I don't really have time to make something that looks like the rest of the universe.
     pub const MASS_OF_EARTH : f64 = 5972200000000000000000000.0; // In KG, 5.9722 * 10 ^ 24 KG
-    const MASS_OF_MINOR_BODIES_RATIO : f64 = 0.0000015; // You read that right, very little asteroids, comets, iceball mass actually exist in a planetary system
+    const MASS_OF_MINOR_BODIES_RATIO : f64 = 0.0001; // You read that right, very little asteroids, comets, iceball mass actually exist in a planetary system
     const MASS_OF_TERRESTRIAL_PLANETS_RATIO : f64 = 0.01443; // Still comparatively small 
     const MASS_OF_ICE_GIANTS_RATIO : f64 = 0.0708; // Still pretty small
     const MASS_OF_GAS_GIANTS_RATIO : f64 = 1.0 - StarCalc::MASS_OF_MINOR_BODIES_RATIO - StarCalc::MASS_OF_TERRESTRIAL_PLANETS_RATIO - StarCalc::MASS_OF_ICE_GIANTS_RATIO;
