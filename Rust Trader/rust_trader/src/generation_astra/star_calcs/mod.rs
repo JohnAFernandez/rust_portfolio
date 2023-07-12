@@ -73,7 +73,7 @@ impl StarCalc {
     const M_MAX_MAGNITUDE : f32 = 8.5;
 
     // this is all based on the solar system.  I don't really have time to make something that looks like the rest of the universe.
-    pub const MASS_OF_EARTH : f64 = 5972200000000000000000000.0; // In KG
+    pub const MASS_OF_EARTH : f64 = 5972200000000000000000000.0; // In KG, 5.9722 * 10 ^ 24 KG
     const MASS_OF_MINOR_BODIES_RATIO : f64 = 0.0000015; // You read that right, very little asteroids, comets, iceball mass actually exist in a planetary system
     const MASS_OF_TERRESTRIAL_PLANETS_RATIO : f64 = 0.01443; // Still comparatively small 
     const MASS_OF_ICE_GIANTS_RATIO : f64 = 0.0708; // Still pretty small
@@ -84,7 +84,11 @@ impl StarCalc {
     const MAX_GAS_GIANT_MASS : f64 = 3180.0 * StarCalc::MASS_OF_EARTH; // These are based on quick research
     const MIN_ICE_GIANT_MASS : f64 = 5.0 * StarCalc::MASS_OF_EARTH; // These are kind of arbitrary limits based on my intuition.
     const MAX_ICE_GIANT_MASS : f64 = 30.0 * StarCalc::MASS_OF_EARTH; // These are kind of arbitrary limits based on my intuition.
+    const MIN_TERRESTRIAL_PLANET : f64 = 0.005 * StarCalc::MASS_OF_EARTH; // Extremely arbitrary
     const MAX_SUPER_EARTH_MASS : f64 = 10.0 * StarCalc::MASS_OF_EARTH; // Biggest super earth found so far is about this size.
+    const MIN_MINOR_BODY_MASS : f64 = 100000000000000000000.0; // 1.0 * 10 ^20 KG
+    const MAX_MINOR_BODY_MASS : f64 = 20000000000000000000000.0; // 2.0*10^22 KG
+
 
     pub fn new_random_star_type() -> i64 {
         let mut star_type : i64 = StarTypes::BH as i64;
@@ -254,10 +258,14 @@ impl StarCalc {
             // this circumvents having to write a long match statement, since this gives a max of 10, the largest known super earth 
             let mut rand_mass : f64 = f64::powf(0.5 + rng.gen::<f64>(), 5.6788735873) * StarCalc::MASS_OF_EARTH;
 
+            // clamp our mass.
             if rand_mass >  StarCalc::MAX_SUPER_EARTH_MASS {
                 rand_mass = StarCalc::MAX_SUPER_EARTH_MASS;
+            } else if rand_mass < StarCalc::MIN_TERRESTRIAL_PLANET {
+                rand_mass = StarCalc::MIN_TERRESTRIAL_PLANET;
             }
 
+            // decide the characteristics of our planet, first with what all these will have.
             let mut planet_flags : i64 = World::RAW_MATERIALS | World::NATURAL_SOIL;
 
             // Does this have earth like gravity?
@@ -355,10 +363,10 @@ impl StarCalc {
                     if rng.gen::<f32>() < 0.15 {
                         planet_flags |= World::NATURAL_PLANTS;
 
-                        if rng.gen::<f32>() < 0.10 {
+                        if rng.gen::<f32>() < 0.50 {
                             planet_flags |= World::NATURAL_ANIMAL_BIOLOGY;
 
-                            if rng.gen::<f32>() < 0.05 {
+                            if rng.gen::<f32>() < 0.50 {
                                 planet_flags |= World::NATURAL_CIV;
                             }
                         }
@@ -383,6 +391,30 @@ impl StarCalc {
     pub fn generate_random_minor_planets(planet_mass : f64, mut worlds : Vec<World>) -> Vec<World> {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
         let num_worlds : i32 = rng.gen_range(10 .. 40);         
+        let mut x = 0;
+        let mut remaining_mass = planet_mass;
+
+        while x < num_worlds && remaining_mass > 0.0 {
+            let mut rand_mass : f64 = (rng.gen::<f64>().powf(3.0) * (StarCalc::MAX_MINOR_BODY_MASS - StarCalc::MIN_MINOR_BODY_MASS)) + StarCalc::MIN_MINOR_BODY_MASS;
+
+            // clamp
+            if rand_mass < StarCalc::MIN_MINOR_BODY_MASS {
+                rand_mass = StarCalc::MIN_MINOR_BODY_MASS;
+            } else if rand_mass > StarCalc::MAX_MINOR_BODY_MASS {
+                rand_mass = StarCalc::MAX_MINOR_BODY_MASS;
+            }
+
+            let mut planet_flags = World::PLUTO_LIKE;
+            
+            if rand_mass < ((StarCalc::MAX_MINOR_BODY_MASS - StarCalc::MIN_MINOR_BODY_MASS) / 2.0 ) + StarCalc::MIN_MINOR_BODY_MASS {
+                planet_flags |= World::SPHEROID;
+            }
+
+            worlds.push(World::build_world(String::from("TEST Minor"), rand_mass, Vec::new(), 0, planet_flags));
+
+            remaining_mass -= rand_mass;
+            x += 1;
+        }
 
         worlds
     }

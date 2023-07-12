@@ -1,6 +1,6 @@
 #![allow(dead_code)] // until more of this is written.
 
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap};
 //use std::isize;
 //use std::ops;
 //use std::num;
@@ -304,6 +304,7 @@ impl World{
     const MARS_LIKE : i64 = World::INSIDE_HABITABLE_ZONE | World::EXTREME_COLD | World::NATURAL_SATELLITES | World::MINIMAL_ATMOSPHERE | World::RAW_MATERIALS | World::MAGNETIC_FIELD;
     const JUPITER_LIKE : i64 = World::HIGH_GRAVITY | World::MAGNETIC_FIELD | World::HYDROGEN | World::NATURAL_SATELLITES | World::TOXIC_ATMOSPHERE | World::HIGH_PRESSURE_ATMOSPHERE;
     const SATURN_LIKE : i64 = World::JUPITER_LIKE | World::RINGS;
+    const PLUTO_LIKE : i64 = World::RAW_MATERIALS | World::EXTREME_COLD | World::NO_ATMOSPHERE;
 
     const ICE_GIANT : i64 = World::HIGH_GRAVITY | World::HIGH_PRESSURE_ATMOSPHERE | World::TOXIC_ATMOSPHERE | World::HYDROGEN | World::MAGNETIC_FIELD | World::NATURAL_SATELLITES | World::RINGS | World::ICE_MANTLE; // Neptune and Uranus, differentiated by cold.
 
@@ -365,6 +366,7 @@ impl World{
         if flags & World::JUPITER_LIKE == World::JUPITER_LIKE { output += "Actually looks like Jupiter!,"}
         if flags & World::SATURN_LIKE == World::SATURN_LIKE { output += "Actually looks like Saturn!,"}
         if flags & World::ICE_GIANT == World::ICE_GIANT { output += "Actually looks like Uranus or Neptune!,"}
+        output += "Found "; output += &count.to_string(); output += "flags.";
 
         output
     }
@@ -643,7 +645,7 @@ impl GameplayState {
             }
         }
 
-        let mut output_string : String = "id,,,,,,,,,,,,,,,,,,,,,\n".to_string();
+        let mut output_string : String = "number,oxygen,water,raw mat,soil,Good Gs,Good Dis,Hydrogen,Habitable,Magnetic,Toxic,Oceans,No Atmos,Min Atmos,Tidal Lock,High Pressure,HOT,COLD,Spheroid,ACIDIC,Basidic,HIGH Gs,VOLCANO,Rings,Oceans,Tectonics,Moons,ICE GIANT,IS MOON,Microbes,Plants,Animals,Civ\n".to_string();
 
         for count in planet_type_count{
             output_string += &count.1.to_string();
@@ -658,7 +660,11 @@ impl GameplayState {
             Err(error) => panic!("Problem creating the file: {:?}", error)
         };
 
-        file.write(output_string.as_bytes());
+        let result = file.write(output_string.as_bytes());
+        match result {
+            Err(error) => println!("Problem writing file! {:?}", error),
+            _=> ()
+        }
 
         state
     
