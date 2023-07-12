@@ -1,6 +1,6 @@
 #![allow(dead_code)] // until more of this is written.
 
-use std::{collections::HashMap};
+use std::collections::HashMap;
 //use std::isize;
 //use std::ops;
 //use std::num;
@@ -231,7 +231,7 @@ fn build_trade_hub(name: String, goods : Resource, weapons : Vec<String>, equipm
 }
 
 
-struct Orbit {
+pub struct Orbit {
     system_name : String,
     orbit_level : i16,
     distance : f32
@@ -250,10 +250,10 @@ pub struct AsteroidBelt {
 }
 
 impl AsteroidBelt {
-    pun fn build_asteroid_belt(mass : f64, orbit: Orbit) -> AsteroidBelt {
-        AsteroidBelt {mass, Orbit}
+    pub fn build_asteroid_belt(mass : f64, orbit: Orbit) -> AsteroidBelt {
+        AsteroidBelt {mass, orbit}
     }
-    
+}    
 
 pub struct World {
     name : String,
@@ -491,10 +491,10 @@ struct System {
 }
 
 impl System {
-    fn build_system(name : String, location : StarmapLocation, gdp : i64, star_type : i64, habitable_zone : (f32, f32), worlds : Vec<World>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
-        System{name, location, gdp, star_type, habitable_zone, worlds, space_materials, police_presence, pirate_presence}
-    }    
 
+    fn build_system(name : String, location : StarmapLocation, gdp : i64, star_type : i64, habitable_zone : (f32, f32), worlds : Vec<World>, asteroid_belts: Vec<AsteroidBelt>, space_materials : f64, police_presence : f32, pirate_presence : f32) -> System{
+        System{name, location, gdp, star_type, habitable_zone, worlds, asteroid_belts, space_materials, police_presence, pirate_presence}
+    }    
 
 
     fn build_random_system(gs : &GameplayState) -> System {
@@ -516,8 +516,15 @@ impl System {
         let mut rng: rand::rngs::ThreadRng = rand::thread_rng();
 
 
-        let asteroid_belts = rng.gen_range(0..3);
-        
+        let belt_count = rng.gen_range(0..4);
+        let mut asteroid_belts : Vec<AsteroidBelt> = Vec::new();
+
+        let mut x = 0;
+        while x < belt_count {
+            asteroid_belts.push(AsteroidBelt::build_asteroid_belt(rng.gen_range(star_calcs::StarCalc::MIN_ASTEROID_FIELD_MASS..star_calcs::StarCalc::MAX_ASTEROID_FIELD_MASS) , Orbit::build_orbit("Test".to_string(), 0, 0.0)));
+            x += 1;
+        }
+
         let pirate_presence : f32;
         let police_presence : f32;
 
@@ -529,7 +536,7 @@ impl System {
         }
 
         
-        System::build_system(String::from("Test"), location, 10000000, star_type, habitable_range, worlds, system_mass, police_presence, pirate_presence)
+        System::build_system(String::from("Test"), location, 10000000, star_type, habitable_range, worlds, asteroid_belts, system_mass, police_presence, pirate_presence)
     }
 
     // make sure everything is as it should be.
@@ -540,7 +547,7 @@ impl System {
             TEST_COUNT += 1;
         
             if TEST_COUNT < 10{
-                println!("System {}, {}", TEST_COUNT, self.star_type)
+                println!("System {}, {}, Asteroid field count: {}", TEST_COUNT, self.star_type, self.asteroid_belts.len());
             }
 
             for world in &self.worlds{
@@ -558,8 +565,11 @@ impl System {
                     } else {
                         println!("HUH?: Name {}, Earth Mass {}, {}", world.name, world.mass / star_calcs::StarCalc::MASS_OF_EARTH, world.supports);
                     }
+
                 }
+
             }
+
         }
     }
 
@@ -640,7 +650,7 @@ impl GameplayState {
     
         let mut state = GameplayState { ship_stats: HashMap::new(), ship_: Vec::new(), weapon_stats: HashMap::new(), difficulty, systems: Vec::new(), player: build_player(player_name, credits), sim_time, tasks: HashMap::new(), results : build_result_stack(0), multiplayer_stack : HashMap::new()};
 
-        let sol_system = System::build_system(String::from("Sol"), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, star_calcs::StarTypes::F as i64, (0.9534625892, 1.373605639),Vec::new(), 0.0, 100.0, 5.0);
+        let sol_system = System::build_system("Sol".to_string(), StarmapLocation::build_starmap_location(500.0, 500.0), 100000000000000, star_calcs::StarTypes::F as i64, (0.9534625892, 1.373605639),Vec::new(), Vec::new(), 0.0, 100.0, 5.0);
 
         state.systems.push(sol_system);
 

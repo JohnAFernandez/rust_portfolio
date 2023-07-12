@@ -88,7 +88,8 @@ impl StarCalc {
     const MAX_SUPER_EARTH_MASS : f64 = 10.0 * StarCalc::MASS_OF_EARTH; // Biggest super earth found so far is about this size.
     const MIN_MINOR_BODY_MASS : f64 = 100000000000000000000.0; // 1.0 * 10 ^20 KG
     const MAX_MINOR_BODY_MASS : f64 = 20000000000000000000000.0; // 2.0*10^22 KG
-
+    pub const MIN_ASTEROID_FIELD_MASS : f64 = StarCalc::MIN_TERRESTRIAL_PLANET / 1000.0;
+    pub const MAX_ASTEROID_FIELD_MASS : f64 = StarCalc::MIN_TERRESTRIAL_PLANET * 10.0; // extrememly arbitrary....
 
     pub fn new_random_star_type() -> i64 {
         let mut star_type : i64 = StarTypes::BH as i64;
